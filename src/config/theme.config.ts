@@ -7,17 +7,17 @@ const siteUrl = (
 export const SITE = {
   name: "Betel",
   description:
-    "un singur Domn, o singură credință, un singur botez, un singur Dumnezeu şi Tată al tuturor",
+    "un singur trup, un singur Duh, un singur Domn, o singură credință, un singur botez, un singur Dumnezeu şi Tată al tuturor",
   url: siteUrl,
   locale: "en-US",
   language: "en",
-  repositoryUrl: "https://github.com/andreialba/quietpages",
+  repositoryUrl: "https://github.com/boroicaradu/betelsighet",
 };
 
 export const NAVIGATION = [
-  { to: "/", label: "Home" },
-  { to: "/blog", label: "Writing" },
-  { to: "/about", label: "About" },
+  { to: "/", label: "Acasă" },
+  { to: "/blog", label: "Noi credem" },
+  { to: "/about", label: "Despre noi" },
   { to: "/contact", label: "Contact" },
 ];
 
