@@ -1,13 +1,13 @@
 const siteUrl = (
   import.meta.env.SITE_URL ||
   import.meta.env.PUBLIC_SITE_URL ||
-  "https://quietpages-eta.vercel.app"
+  "https://betelsighet.vercel.app"
 ).replace(/\/$/, "");
 
 export const SITE = {
-  name: "Quiet Pages",
+  name: "Betel",
   description:
-    "An independent magazine on writing, design, and the slow web. Published occasionally, read closely.",
+    "un singur Domn, o singură credință, un singur botez, un singur Dumnezeu şi Tată al tuturor",
   url: siteUrl,
   locale: "en-US",
   language: "en",
