@@ -25,9 +25,9 @@ export const NAVIGATION = [
 ];
 
 export const CONTACT = {
-  email: "hello@example.com",
-  socialHandle: "@quietpages",
-  socialUrl: "https://x.com/quietpages",
+  email: "contact@betelsighet.ro",
+  socialHandle: "@betelsighet",
+  socialUrl: "https://www.instagram.com/betelsighet/",
 };
 
 export const FORMS = {
@@ -53,26 +53,26 @@ export const SOCIAL_LINKS = [
 export const authors = [
   {
     slug: "elena-march",
-    name: "Elena March",
-    bio: "Writer & editor covering design, craft, and slow technology.",
+    name: "Simion BUMBAR",
+    bio: "Pastor coordonator, Secretar General al Cultului Creștin Penticostal din România.",
     longBio:
-      "Elena March writes about the quiet edges of design and technology. Previously an editor at two small magazines, she now publishes essays and field notes from a desk overlooking the harbour.",
+      "long bio Simion Bumabar",
     avatar: "/avatars/elena-march.svg",
   },
   {
     slug: "samuel-okafor",
-    name: "Samuel Okafor",
-    bio: "Software engineer with a soft spot for typography and the open web.",
+    name: "Grigore Todoran",
+    bio: "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
-      "Samuel builds tools for writers and reads more than he ships. He believes the best interfaces are the ones you don't notice.",
+      "long bio Grigore Todoran",
     avatar: "/avatars/samuel-okafor.svg",
   },
   {
     slug: "mira-iwasaki",
     name: "Mira Iwasaki",
-    bio: "Photographer and essayist based between Kyoto and Lisbon.",
+    bio: "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
-      "Mira's work sits at the intersection of place, memory, and the everyday object. Her essays have appeared in a number of small but loved publications.",
+      "long bio Marius Turza",
     avatar: "/avatars/mira-iwasaki.svg",
   },
 ];
