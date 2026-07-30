@@ -52,16 +52,16 @@ export const SOCIAL_LINKS = [
 
 export const authors = [
   {
-    slug: "elena-march",
+    slug: "simion-bumbar",
     name: "Simion BUMBAR",
     bio: "Pastor coordonator, Secretar General al Cultului Creștin Penticostal din România.",
     longBio:
       "long bio Simion Bumabar",
-    avatar: "/avatars/elena-march.svg",
+    avatar: "/avatars/Simion-Bumbar.svg",
   },
   {
-    slug: "samuel-okafor",
-    name: "Grigore Todoran",
+    slug: "grigore-todoran",
+    name: "Grigore TODORAN",
     bio: "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
       "long bio Grigore Todoran",
