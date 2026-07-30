@@ -16,7 +16,7 @@ export const SITE = {
 
 export const NAVIGATION = [
   { to: "/", label: "Acasă" },
-  { to: "/blog", label: "Noi credem" },
+  { to: "/confession", label: "Noi credem" },
   { to: "/about", label: "Despre noi" },
   { to: "/events", label: "Evenimente" },
   { to: "/archive", label: "Arhiva Video" },
