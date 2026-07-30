@@ -19,8 +19,9 @@ export const NAVIGATION = [
   { to: "/confession", label: "Noi credem" },
   { to: "/about", label: "Despre noi" },
   { to: "/events", label: "Evenimente" },
-  { to: "/archive", label: "Arhiva Video" },
+  { to: "/blog", label: "Blog" },
   { to: "/contact", label: "Contact" },
+  { to: "/archive", label: "Arhiva Video" },
   { to: "/live", label: "LIVE" },
 ];
 
