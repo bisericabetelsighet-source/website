@@ -65,15 +65,23 @@ export const authors = [
     bio: "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
       "long bio Grigore Todoran",
-    avatar: "/avatars/samuel-okafor.svg",
+    avatar: "/avatars/Grigore-Todoran.svg",
   },
   {
-    slug: "mira-iwasaki",
-    name: "Mira Iwasaki",
+    slug: "marius-turza",
+    name: "Marius TURZA",
     bio: "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
       "long bio Marius Turza",
-    avatar: "/avatars/mira-iwasaki.svg",
+    avatar: "/avatars/Marius-Turza.svg",
+  },
+  {
+    slug: "florin-pop",
+    name: "Florin POP",
+    bio: "Pastor asistent, lider tineret TBS.",
+    longBio:
+      "long bio Florin Pop",
+    avatar: "/avatars/Florin-Pop.svg",
   },
 ];
 
