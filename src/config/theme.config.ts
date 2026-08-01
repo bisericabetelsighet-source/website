@@ -22,6 +22,7 @@ export const NAVIGATION = [
   { to: "/blog", label: "Blog" },
   { to: "/contact", label: "Contact" },
   { to: "/archive", label: "Arhiva Video" },
+  { to: "/radio", label: "Radio" },
   { to: "/live", label: "LIVE" },
 ];
 
