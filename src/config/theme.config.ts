@@ -9,8 +9,8 @@ export const SITE = {
   description:
     "un singur trup, un singur Duh, un singur Domn, o singură credință, un singur botez, un singur Dumnezeu şi Tată al tuturor",
   url: siteUrl,
-  locale: "en-US",
-  language: "en",
+  locale: "ro-RO",
+  language: "ro",
   repositoryUrl: "https://github.com/boroicaradu/betelsighet",
 };
 
