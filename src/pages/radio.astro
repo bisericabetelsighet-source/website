@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
 
 /* Example radio shows — replace with real sources or audio files */
 const shows = [
@@ -9,13 +10,16 @@ const shows = [
 ---
 
 <BaseLayout title="Radio — BETEL" description="Emisiuni și transmisii radio de la BETEL" canonical="/radio">
-  <main class="mx-auto max-w-4xl px-5 py-12">
-    <header class="mb-6">
-      <h1 class="font-serif text-3xl font-semibold">Radio</h1>
+  <div class="mx-auto max-w-4xl px-5 py-12">
+    <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Radio" }]} />
+
+    <header class="mt-6">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Radio</div>
+      <h1 class="mt-2 font-serif text-3xl font-semibold">Radio</h1>
       <p class="text-muted-foreground mt-2">Ascultă emisiunile și materialele audio ale comunității.</p>
     </header>
 
-    <section aria-label="Emisiuni">
+    <main aria-label="Emisiuni">
       <ul class="space-y-6">
         {shows.map((s) => (
           <li key={s.id} class="rounded-md border border-border p-5">
@@ -34,6 +38,6 @@ const shows = [
           </li>
         ))}
       </ul>
-    </section>
-  </main>
+    </main>
+  </div>
 </BaseLayout>

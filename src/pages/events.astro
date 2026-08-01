@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
 
 /* Example events list — replace with dynamic content as needed */
 const events = [
@@ -24,13 +25,16 @@ const events = [
 ---
 
 <BaseLayout title="Evenimente — BETEL" description="Calendarul evenimentelor și slujbelor BETEL" canonical="/events">
-  <main class="mx-auto max-w-5xl px-5 py-12">
-    <header class="mb-8">
-      <h1 class="font-serif text-3xl font-semibold">Evenimente</h1>
+  <div class="mx-auto max-w-5xl px-5 py-12">
+    <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Evenimente" }]} />
+
+    <header class="mt-6">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Events</div>
+      <h1 class="mt-2 font-serif text-3xl font-semibold">Evenimente</h1>
       <p class="text-muted-foreground mt-2">Următoarele întâlniri, slujbe și evenimente organizate de comunitatea noastră.</p>
     </header>
 
-    <section aria-labelledby="upcoming-events">
+    <main aria-labelledby="upcoming-events">
       <h2 id="upcoming-events" class="sr-only">Evenimente viitoare</h2>
       <ul class="space-y-6">
         {events.map((ev) => (
@@ -57,6 +61,6 @@ const events = [
           </li>
         ))}
       </ul>
-    </section>
-  </main>
+    </main>
+  </div>
 </BaseLayout>

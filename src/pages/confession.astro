@@ -1,37 +1,43 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
 
 /* Put the "Noi credem" doctrinal text here. Use semantic <article> and <section>. */
 ---
 
 <BaseLayout title="Noi credem — BETEL" description="Credința și mărturisirea bisericii BETEL" canonical="/confession">
-  <main class="mx-auto max-w-3xl px-5 py-12">
-    <article>
-      <header class="mb-6">
-        <h1 class="font-serif text-3xl font-semibold">Noi credem</h1>
-        <p class="text-muted-foreground mt-2">Mărturisirea de credință a Comunității Penticostale BETEL.</p>
-      </header>
+  <div class="mx-auto max-w-3xl px-5 py-12">
+    <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Noi credem" }]} />
 
-      <section class="prose max-w-none">
-        <p>Credem în Dumnezeul cel Veșnic, în Domnul Isus Hristos și în Duhul Sfânt. Credem că Scriptura este inspirată de Dumnezeu și este autoritatea supremă pentru credință și viață.</p>
+    <header class="mt-6">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Confession</div>
+      <h1 class="mt-2 font-serif text-3xl font-semibold">Noi credem</h1>
+      <p class="text-muted-foreground mt-2">Mărturisirea de credință a Comunității Penticostale BETEL.</p>
+    </header>
 
-        <h2>Despre Dumnezeu</h2>
-        <p>Dumnezeu este unul în esență și trei în persoane: Tatăl, Fiul și Duhul Sfânt.</p>
+    <main>
+      <article>
+        <section class="prose max-w-none">
+          <p>Credem în Dumnezeul cel Veșnic, în Domnul Isus Hristos și în Duhul Sfânt. Credem că Scriptura este inspirată de Dumnezeu și este autoritatea supremă pentru credință și viață.</p>
 
-        <h2>Despre Domnul Isus Hristos</h2>
-        <p>Creștem în credința că Isus Hristos este Fiul lui Dumnezeu, născut din Fecioara Maria, a murit pentru păcatele noastre, a înviat și va veni din nou.</p>
+          <h2>Despre Dumnezeu</h2>
+          <p>Dumnezeu este unul în esență și trei în persoane: Tatăl, Fiul și Duhul Sfânt.</p>
 
-        <h2>Despre Duhul Sfânt</h2>
-        <p>Duhul Sfânt s-a pogorât peste credincioși, aduce călăuzire, daruri și roadele sale în viața Bisericii.</p>
+          <h2>Despre Domnul Isus Hristos</h2>
+          <p>Creștem în credința că Isus Hristos este Fiul lui Dumnezeu, născut din Fecioara Maria, a murit pentru păcatele noastre, a înviat și va veni din nou.</p>
 
-        <h2>Despre Biserică</h2>
-        <p>Biserica este trupul lui Hristos, formată din toți cei care cred în El, chemați să mărturisească și să slujească.</p>
+          <h2>Despre Duhul Sfânt</h2>
+          <p>Duhul Sfânt s-a pogorât peste credincioși, aduce călăuzire, daruri și roadele sale în viața Bisericii.</p>
 
-        <h2>Despre Sacramente</h2>
-        <p>Botezul și Cina Domnului sunt practici importante ale Bisericii, semne exterioare ale harului lui Dumnezeu.</p>
+          <h2>Despre Biserică</h2>
+          <p>Biserica este trupul lui Hristos, formată din toți cei care cred în El, chemați să mărturisească și să slujească.</p>
 
-        <p>Introduceți aici textul complet al mărturisirii — pasaje, articole de credință, referințe biblice etc.</p>
-      </section>
-    </article>
-  </main>
+          <h2>Despre Sacramente</h2>
+          <p>Botezul și Cina Domnului sunt practici importante ale Bisericii, semne exterioare ale harului lui Dumnezeu.</p>
+
+          <p>Introduceți aici textul complet al mărturisirii — pasaje, articole de credință, referințe biblice etc.</p>
+        </section>
+      </article>
+    </main>
+  </div>
 </BaseLayout>
