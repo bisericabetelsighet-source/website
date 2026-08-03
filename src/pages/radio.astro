@@ -4,19 +4,19 @@ import Breadcrumbs from "../components/Breadcrumbs.astro";
 
 /* Example radio shows — replace with real sources or audio files */
 const shows = [
-  { id: "morning-prayer", title: "Rugăciunea de dimineață", src: "/media/radio/morning-prayer.mp3" },
-  { id: "devotional", title: "Meditație zilnică", src: "/media/radio/devotional.mp3" }
+  { id: "morning-prayer", title: "Simion Bumbar", src: "/media/radio/indexpredica.mp3" },
+  { id: "devotional", title: "Alex Palas", src: "/media/radio/indexpredica.mp3" }
 ];
 ---
 
-<BaseLayout title="Radio — BETEL" description="Emisiuni și transmisii radio de la BETEL" canonical="/radio">
+<BaseLayout title="Radio — BETEL" description="Serii de predici susținute în cadrul bisericii noastre" canonical="/radio">
   <div class="mx-auto max-w-4xl px-5 py-12">
     <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Radio" }]} />
 
     <header class="mt-6">
       <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Radio</div>
       <h1 class="mt-2 font-serif text-3xl font-semibold">Radio</h1>
-      <p class="text-muted-foreground mt-2">Ascultă emisiunile și materialele audio ale comunității.</p>
+      <p class="text-muted-foreground mt-2">Ascultă seriile de predici ținute în biserica noastră.</p>
     </header>
 
     <main aria-label="Emisiuni">
@@ -26,7 +26,7 @@ const shows = [
             <div class="flex items-center justify-between gap-4">
               <div>
                 <h2 class="text-lg font-medium">{s.title}</h2>
-                <p class="text-sm text-muted-foreground mt-1">Descoperă emisiunea și ascultă episodul.</p>
+                <p class="text-sm text-muted-foreground mt-1"> Index - Titlu predica - Seria de predici de care apartine .</p>
               </div>
               <div>
                 <audio controls preload="none" aria-label={`Ascultă ${s.title}`}>
