@@ -79,7 +79,7 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
     </div>
   </section>
 
-<!--
+/*
   <section class="border-b border-border/60">
     <div class="mx-auto max-w-6xl px-5 py-16">
       <div class="mb-6 flex items-center justify-between">
@@ -188,7 +188,7 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
       </a>
     </div>
   </section>
-
+*/
   <Newsletter />
 </BaseLayout>
 
@@ -219,7 +219,7 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
       if (empty) empty.hidden = visible > 0;
       buttons.forEach((button) => setActive(button, button.dataset.homeFilter === category));
     };
--->
+
     buttons.forEach((button) => {
       button.addEventListener("click", () => filterCards(button.dataset.homeFilter || ""));
     });
