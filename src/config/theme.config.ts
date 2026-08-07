@@ -56,7 +56,7 @@ export const authors = [
     name: "Simion BUMBAR",
     bio: "Pastor coordonator, Secretar General al Cultului Creștin Penticostal din România.",
     longBio:
-      "long bio Simion Bumabar",
+      "long bio Simion Bumbar",
     avatar: "/avatars/Simion-Bumbar.svg",
   },
   {
