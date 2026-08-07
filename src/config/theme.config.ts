@@ -19,7 +19,7 @@ export const NAVIGATION = [
   { to: "/about", label: "Despre noi" },
   { to: "/confession", label: "Noi credem" },
   { to: "/events", label: "Evenimente" },
-  { to: "/blog", label: "Blog" },
+  { to: "/articles", label: "Articole" },
   { to: "/contact", label: "Contact" },
   { to: "/archive", label: "Arhiva Video" },
   { to: "/radio", label: "Radio" },
