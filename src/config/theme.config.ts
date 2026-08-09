@@ -100,4 +100,9 @@ export const categories = [
 ];
 
 export const tags = [
+  { slug: "evanghelism", name: "Evanghelizare" },
+  { slug: "mission", name: "Misiune" },
+  { slug: "baptism", name: "Botez" },
+  { slug: "wedding", name: "Nuntă" },
+  { slug: "blessing", name: "Binecuvântare de copilași" },
 ];
