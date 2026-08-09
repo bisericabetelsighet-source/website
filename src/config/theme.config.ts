@@ -86,11 +86,11 @@ export const authors = [
 ];
 
 export const categories = [
-  { slug: "essays", name: "Eseuri" },
-  { slug: "design", name: "Design" },
-  { slug: "field-notes", name: "Notițe de teren" },
-  { slug: "interviews", name: "Interviuri" },
   { slug: "sermons", name: "Predici" },
+  { slug: "essays", name: "Eseuri" },
+  { slug: "interviews", name: "Interviuri" },
+  { slug: "field-notes", name: "Notițe de teren" },
+  { slug: "design", name: "Design" },
 ];
 
 export const tags = [
