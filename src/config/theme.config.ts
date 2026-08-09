@@ -107,5 +107,7 @@ export const tags = [
   { slug: "blessing", name: "Binecuvântare de copilași" },
   { slug: "last_supper", name: "Cina Domnului" },
   { slug: "jesus", name: "Viața și activitatea Domnului Isus" },
+  { slug: "theology", name: "Teologie" },
+  { slug: "soteriology", name: "Soteriologie" },
   { slug: "eschatology", name: "Escatologie" },
 ];
