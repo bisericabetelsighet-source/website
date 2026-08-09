@@ -149,7 +149,7 @@ const posts = await sortedPosts();
       cards.forEach((card) => (card.hidden = true));
       matches.slice(0, visibleCount).forEach((card) => (card.hidden = false));
 
-      count.textContent = `${matches.length} ${matches.length === 1 ? "result" : "results"}${state.q ? ` for "${state.q}"` : ""}`;
+      count.textContent = `${matches.length} ${matches.length === 1 ? "result" : "rezultate"}${state.q ? ` for "${state.q}"` : ""}`;
       empty.hidden = matches.length > 0;
 
       const totalPages = Math.max(1, Math.ceil(matches.length / pageSize));
