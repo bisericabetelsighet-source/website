@@ -29,7 +29,10 @@ export const NAVIGATION = [
 export const CONTACT = {
   email: "contact@betelsighet.ro",
   socialHandle: "@betelsighet",
-  socialUrl: "https://www.instagram.com/betelsighet/",
+  socialUrl_Instagram: "https://www.instagram.com/betelsighet/",
+  socialUrl_Facebook: "https://www.facebook.com/betelsighet/",
+  socialUrl_TikTok: "https://www.tiktok.com/betelsighet/",
+  socialUrl_YouTube: "https://www.youtube.com/betelsighet/",
 };
 
 export const FORMS = {
@@ -46,8 +49,11 @@ export const FORMS = {
 };
 
 export const SOCIAL_LINKS = [
-  { href: CONTACT.socialUrl, label: `${SITE.name} on X`, icon: "twitter" },
   { href: `mailto:${CONTACT.email}`, label: "Email", icon: "mail" },
+  { href: CONTACT.socialUrl_Instagram, label: `${SITE.name} pe Instagram`, icon: "instagram" },
+  { href: CONTACT.socialUrl_Facebook, label: `${SITE.name} pe Facebook`, icon: "facebook" },
+  { href: CONTACT.socialUrl_TikTok, label: `${SITE.name} pe TikTok`, icon: "tiktok" },
+  { href: CONTACT.socialUrl_YouTube, label: `${SITE.name} pe Youtube`, icon: "youtube" },
 ];
 
 export const authors = [
