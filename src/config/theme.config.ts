@@ -5,7 +5,7 @@ const siteUrl = (
 ).replace(/\/$/, "");
 
 export const SITE = {
-  name: "Biserica Penticostală Betel Sighetu Marmației",
+  name: "Betel Sighet",
   description:
     "un singur trup, un singur Duh, un singur Domn, o singură credință, un singur botez, un singur Dumnezeu şi Tată al tuturor",
   url: siteUrl,
