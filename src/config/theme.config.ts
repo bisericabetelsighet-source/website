@@ -110,5 +110,6 @@ export const tags = [
   { slug: "friday", name: "Moartea Domnului Isus" },
   { slug: "easter", name: "Învierea Domnului Isus" },
   { slug: "asscension", name: "Înălțarea Domnului Isus" },
+  { slug: "spirit", name: "Coborârea Duhului Sfânt" },
   { slug: "comeback", name: "Revenirea Domnului Isus" },
 ];
