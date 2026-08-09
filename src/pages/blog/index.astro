@@ -9,13 +9,13 @@ const posts = await sortedPosts();
 ---
 
 <BaseLayout
-  title={`Archive - ${SITE.name}`}
-  description="Every essay, field note, and interview we've published. Search and filter by category or tag."
+  title={`Articole - ${SITE.name}`}
+  description="Predici, eseuri, notițe de teren și interviuri."
   canonical="/blog"
 >
   <div class="mx-auto max-w-4xl px-5 py-12" data-archive>
     <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Blog" }]} />
-    <h1 class="mt-4 font-serif text-4xl font-semibold sm:text-5xl">Arhiva</h1>
+    <h1 class="mt-4 font-serif text-4xl font-semibold sm:text-5xl">Articole</h1>
     <p class="mt-3 max-w-xl text-muted-foreground">
       Articole diverse din viața comunității noastre. {posts.length} predici, eseuri, notițe de teren și interviuri.
     </p>
@@ -67,7 +67,7 @@ const posts = await sortedPosts();
 
     <div data-archive-empty class="mt-12 rounded-md border border-dashed border-border py-20 text-center" hidden>
       <div class="font-serif text-lg">No matches</div>
-      <p class="mt-2 text-sm text-muted-foreground">Try a different word, or clear the filters.</p>
+      <p class="mt-2 text-sm text-muted-foreground">Încearcă cu alte cuvinte sau elimină din filtre.</p>
     </div>
 
     <div data-archive-list>
