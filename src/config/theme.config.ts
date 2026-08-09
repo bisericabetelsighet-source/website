@@ -106,10 +106,6 @@ export const tags = [
   { slug: "wedding", name: "Cununie" },
   { slug: "blessing", name: "Binecuvântare de copilași" },
   { slug: "last_supper", name: "Cina Domnului" },
-  { slug: "christmas", name: "Nașterea Domnului Isus" },
-  { slug: "friday", name: "Moartea Domnului Isus" },
-  { slug: "easter", name: "Învierea Domnului Isus" },
-  { slug: "asscension", name: "Înălțarea Domnului Isus" },
-  { slug: "spirit", name: "Coborârea Duhului Sfânt" },
-  { slug: "comeback", name: "Revenirea Domnului Isus" },
+  { slug: "jesus", name: "Viața și activitatea Domnului Isus" },
+  { slug: "eschatology", name: "Escatologie" },
 ];
