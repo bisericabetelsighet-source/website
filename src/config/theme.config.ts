@@ -31,7 +31,7 @@ export const CONTACT = {
   socialHandle: "@betelsighet",
   socialUrl_Instagram: "https://www.instagram.com/betelsighet/",
   socialUrl_Facebook: "https://www.facebook.com/betelsighet/",
-  socialUrl_TikTok: "https://www.tiktok.com/betelsighet/",
+  socialUrl_TikTok: "https://www.tiktok.com/@betelsighet/",
   socialUrl_YouTube: "https://www.youtube.com/betelsighet/",
 };
 
