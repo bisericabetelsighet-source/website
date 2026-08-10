@@ -20,18 +20,33 @@ async function fetchYouTubeVideos() {
     const result = await parseStringPromise(xml);
     
     const videos = result.feed.entry.map((entry) => {
-      const videoId = entry.id[0].split('yt:video:')[1];
-      const title = entry.title[0];
-      const link = entry.link[0].$.href;
-      const thumbnail = entry['media:thumbnail'][0].$.url;
-      
-      return {
-        id: videoId,
-        title,
-        thumb: thumbnail,
-        link,
-      };
-    });
+      try {
+        // Extract video ID from yt:videoId tag
+        const videoId = entry['yt:videoId']?.[0] || entry.id[0].split('yt:video:')[1];
+        const title = entry.title[0];
+        const link = entry.link?.[0]?.$?.href || `https://www.youtube.com/watch?v=${videoId}`;
+        
+        // Get thumbnail from media:thumbnail
+        let thumbnail = '';
+        if (entry['media:thumbnail']) {
+          thumbnail = entry['media:thumbnail'][0].$.url;
+        } else if (entry['media:group']) {
+          thumbnail = entry['media:group'][0]['media:thumbnail']?.[0]?.$.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+        } else {
+          thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+        }
+        
+        return {
+          id: videoId,
+          title,
+          thumb: thumbnail,
+          link,
+        };
+      } catch (err) {
+        console.warn('Warning: Could not parse entry', err.message);
+        return null;
+      }
+    }).filter(Boolean);
     
     // Create data directory if it doesn't exist
     const dataDir = path.join(__dirname, '../src/data');
