@@ -21,8 +21,8 @@ export const NAVIGATION = [
   { to: "/events", label: "Evenimente" },
   { to: "/blog", label: "Articole" },
   { to: "/contact", label: "Contact" },
-  { to: "/archive", label: "Arhiva Video" },
-  { to: "/radio", label: "Radio" },
+  //{ to: "/archive", label: "Arhiva Video" },
+  //{ to: "/radio", label: "Radio" },
   { to: "/live", label: "LIVE" },
 ];
 
