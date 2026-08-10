@@ -80,6 +80,9 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
     </div>
   </section>
 
+  <Newsletter />
+  </BaseLayout>
+
   <section class="border-b border-border/60">
     <div class="mx-auto max-w-6xl px-5 py-16">
       <div class="mb-6 flex items-center justify-between">
@@ -151,7 +154,7 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
 
   <section class="mx-auto max-w-6xl px-5 py-16" data-home-latest>
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <h2 class="font-serif text-2xl font-semibold">Latest</h2>
+      <h2 class="font-serif text-2xl font-semibold">Articole recente</h2>
       <div class="flex flex-wrap gap-2">
         <button
           type="button"
@@ -188,9 +191,6 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
       </a>
     </div>
   </section>
-
-  <Newsletter />
-</BaseLayout>
 
 <script>
   const latest = document.querySelector("[data-home-latest]");
