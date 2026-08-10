@@ -3,11 +3,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 
-/* Placeholder video archive items */
-const videos = [
-  { id: "sermon-2026-07-01", title: "Predică - 1 iulie 2026", thumb: "/thumbnails/sermon1.jpg", link: "https://youtu.be/J84Pma75c6I?si=PAJZbApN5Q0kth94" },
-  { id: "sermon-2026-06-24", title: "Predică - 24 iunie 2026", thumb: "/thumbnails/sermon2.jpg", link: "#" }
-];
+// Import dynamically fetched videos from YouTube RSS feed
+import videos from "../data/youtube-videos.json";
 ---
 
 <BaseLayout title="Arhiva Video — BETEL" description="Înregistrări video ale slujbelor și evenimentelor noastre" canonical="/archive">
@@ -20,7 +17,7 @@ const videos = [
       <p class="text-muted-foreground mt-2">Vizionați înregistrări ale slujbelor, predicilor și evenimentelor.</p>
     </header>
 
-    <main aria-labelledby="video-archive" class="grid gap-6 sm:grid-cols-2">
+    <main aria-labelledby="video-archive" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {videos.map((v) => (
         <article key={v.id} class="rounded-md overflow-hidden border border-border">
           <a href={v.link} class="block">
