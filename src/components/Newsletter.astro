@@ -11,8 +11,8 @@ const newsletterEnctype = hasNewsletterEndpoint ? FORMS.newsletter.enctype : und
 {
   compact ? (
     <div>
-      <div class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Newsletter</div>
-      <p class="mt-2 text-sm text-muted-foreground">A short letter, once a fortnight. No noise.</p>
+      <div class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Abonează-te!</div>
+      <p class="mt-2 text-sm text-muted-foreground">Fii la curent cu toate noutățile bisericii noastre.</p>
       <form
         action={newsletterAction}
         method={newsletterMethod}
@@ -26,11 +26,11 @@ const newsletterEnctype = hasNewsletterEndpoint ? FORMS.newsletter.enctype : und
           type="email"
           required
           autocomplete="email"
-          placeholder="you@example.com"
+          placeholder="adresa@exemplu.com"
           class="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
         <button type="submit" class="rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90">
-          Join
+          Click
         </button>
       </form>
     </div>
