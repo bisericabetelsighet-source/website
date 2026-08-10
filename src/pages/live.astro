@@ -2,8 +2,46 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 
-/* If the livestream URL is known, set it here */
-const streamUrl = "https://youtube.com/live/RyyCch2T7Oo"; // e.g. "https://www.youtube.com/embed/VIDEO_ID"
+const CHANNEL_ID = "UCMN5bRpid3A09cIrkz97H2A";
+const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
+
+/*
+  Live detection strategy (server-side):
+  - Fetch /channel/{CHANNEL_ID}/live with redirect: 'manual'
+  - If YouTube responds with a 3xx redirect to /watch?v=VIDEO_ID, we extract VIDEO_ID and embed.
+  - This runs server-side (no client JS) so the page renders with the correct iframe when the site is built/run.
+  - If detection fails, we show a friendly fallback with a link to the channel.
+*/
+let isLive = false;
+let embedUrl = "";
+try {
+  const res = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
+    method: "GET",
+    redirect: "manual",
+  });
+
+  // YouTube redirects to /watch?v=VIDEO_ID when currently live
+  if ((res.status === 301 || res.status === 302) && res.headers) {
+    const locationHeader = res.headers.get("location") ?? "";
+    if (locationHeader) {
+      // Ensure absolute URL for parsing
+      const absolute = locationHeader.startsWith("http")
+        ? locationHeader
+        : `https://www.youtube.com${locationHeader}`;
+      try {
+        const url = new URL(absolute);
+        const v = url.searchParams.get("v");
+        if (v) {
+          embedUrl = `https://www.youtube.com/embed/${v}?rel=0`;
+          isLive = true;
+        }
+      } catch {}
+    }
+  }
+} catch (e) {
+  // Fail silently. We don't want build to error if fetch is blocked.
+  console.warn("YouTube live detection failed:", e);
+}
 ---
 
 <BaseLayout title="LIVE — BETEL" description="Transmisiuni LIVE de la BETEL" canonical="/live">
@@ -13,14 +51,83 @@ const streamUrl = "https://youtube.com/live/RyyCch2T7Oo"; // e.g. "https://www.y
     <header class="mt-6">
       <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Live</div>
       <h1 class="mt-2 font-serif text-3xl font-semibold">LIVE</h1>
-      <p class="text-muted-foreground mt-2">Urmăriți transmisiunile noastre în direct. </p>
+      <p class="text-muted-foreground mt-2">Urmăriți transmisiunile noastre în direct.</p>
     </header>
 
-    <p>
+    <main class="mt-8">
+      {isLive ? (
+        <section aria-labelledby="live-heading" class="space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 rounded-md bg-red-600 px-2 py-1 text-sm font-semibold text-white">
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="shrink-0">
+                <circle cx="12" cy="12" r="8"></circle>
+              </svg>
+              Live acum
+            </span>
+            <a href={CHANNEL_URL} class="text-sm underline">Urmăriți pe YouTube</a>
+          </div>
 
-    </p>
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/RyyCch2T7Oo?si=AHu9eSn9xAsvQyVi" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+          <h2 id="live-heading" class="sr-only">Transmisiune live</h2>
 
-    </div>
+          <div class="w-full overflow-hidden rounded-md bg-black" role="region" aria-label="Transmisiune live video">
+            <div style="position:relative;padding-top:56.25%">
+              <iframe
+                src={embedUrl}
+                title="Betel - transmisiune live"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+              />
+            </div>
+          </div>
 
+          <p class="text-sm text-muted-foreground">
+            Dacă playerul nu pornește automat, încercați <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a>.
+          </p>
+        </section>
+      ) : (
+        <section aria-labelledby="upcoming-heading" class="space-y-6">
+          <h2 id="upcoming-heading" class="text-xl font-semibold">Momentan nu este niciun LIVE</h2>
+
+          <div class="flex flex-col gap-4 md:flex-row md:items-center">
+            <div class="flex-1 rounded-md border bg-card p-4">
+              <p class="text-muted-foreground">
+                În prezent nu avem o transmisiune live activă. Când canalul va transmite în direct, playerul va apărea aici automat.
+              </p>
+              <p class="mt-3 text-sm">
+                Urmăriți canalul nostru pentru notificări:
+              </p>
+              <a
+                class="inline-flex items-center gap-2 mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                href={CHANNEL_URL}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Deschide Betel pe YouTube
+              </a>
+            </div>
+
+            <aside class="w-full md:w-56">
+              <div class="rounded-md border p-3">
+                <div class="text-xs font-medium uppercase text-muted-foreground">Urmăriți</div>
+                <div class="mt-2 text-sm">
+                  Abonați-vă pentru a primi notificări când începem transmisiunea.
+                </div>
+                <a
+                  href={CHANNEL_URL + "/?sub_confirmation=1"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-3 inline-block w-full rounded-md border px-3 py-2 text-center text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  Abonează-te
+                </a>
+              </div>
+            </aside>
+          </div>
+
+          <p class="text-xs text-muted-foreground">Detecția LIVE se face la încărcarea paginii. Dacă credeți că e live dar playerul nu apare, încercați reîncărcarea paginii.</p>
+        </section>
+      )}
+    </main>
+  </div>
 </BaseLayout>
