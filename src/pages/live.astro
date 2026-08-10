@@ -1,10 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import Breadcrumbs from "../components/Breadcrumbs.astro";
-
-/* If the livestream URL is known, set it here */
-const streamUrl = "https://youtube.com/live/RyyCch2T7Oo"; // e.g. "https://www.youtube.com/embed/VIDEO_ID"
----
+import Breadcrumbs from "../components/Breadcrumbs.astro"
 
 <BaseLayout title="LIVE — BETEL" description="Transmisiuni LIVE de la BETEL" canonical="/live">
   <div class="mx-auto max-w-4xl px-5 py-12">
@@ -16,9 +12,6 @@ const streamUrl = "https://youtube.com/live/RyyCch2T7Oo"; // e.g. "https://www.y
       <p class="text-muted-foreground mt-2">Urmăriți transmisiunile noastre în direct. </p>
     </header>
 
-    <p>
-
-    </p>
     <iframe width="560" height="315" src="https://www.youtube.com/embed/RyyCch2T7Oo?si=AHu9eSn9xAsvQyVi" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
     </div>
