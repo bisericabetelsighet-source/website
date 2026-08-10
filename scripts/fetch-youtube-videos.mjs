@@ -46,7 +46,7 @@ async function fetchYouTubeVideos() {
         console.warn('Warning: Could not parse entry', err.message);
         return null;
       }
-    }).filter(Boolean).filter((video) => !video.title.includes('Slujbă'));
+    }).filter(Boolean);
     
     // Create data directory if it doesn't exist
     const dataDir = path.join(__dirname, '../src/data');
