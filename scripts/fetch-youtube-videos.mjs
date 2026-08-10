@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { parseStringPromise } from 'xml2js';
 import fs from 'fs';
 import path from 'path';
@@ -18,9 +17,7 @@ async function fetchYouTubeVideos() {
     }
     
     const xml = await response.text();
-    const { Parser } = await import('xml2js');
-    const parser = new Parser();
-    const result = await parser.parseStringPromise(xml);
+    const result = await parseStringPromise(xml);
     
     const videos = result.feed.entry.map((entry) => {
       const videoId = entry.id[0].split('yt:video:')[1];
