@@ -6,15 +6,22 @@ const CHANNEL_ID = "UCMN5bRpid3A09cIrkz97H2A";
 const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
 
 /*
-  Live detection strategy (server-side):
-  - Fetch /channel/{CHANNEL_ID}/live with redirect: 'manual'
-  - If YouTube responds with a 3xx redirect to /watch?v=VIDEO_ID, we extract VIDEO_ID and embed.
-  - This runs server-side (no client JS) so the page renders with the correct iframe when the site is built/run.
-  - If detection fails, we show a friendly fallback with a link to the channel.
+  Live & upcoming detection strategy (server-side):
+  1. Try a manual redirect fetch to /channel/{CHANNEL_ID}/live. YouTube returns a 3xx redirect to /watch?v=VIDEO_ID when currently live.
+  2. If there's no redirect, fetch the page HTML and search for a watch?v=VIDEO_ID occurrence. YouTube includes the upcoming/placeholder video in the channel live page HTML when a stream is scheduled.
+  3. Attempt to detect whether the found video is upcoming by heuristics ("isUpcoming" flags in the page JSON) and parse any start time we can find.
+
+  Notes:
+  - This is best-effort server-side detection with zero client JS and no external API keys.
+  - Parsing YouTube HTML/inline JSON is brittle, but it's preferable to adding a Data API dependency for a simple theme feature.
 */
 let isLive = false;
+let isUpcoming = false;
 let embedUrl = "";
+let upcomingStart = null;
+
 try {
+  // First try the redirect approach for an active live stream.
   const res = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
     method: "GET",
     redirect: "manual",
@@ -24,7 +31,6 @@ try {
   if ((res.status === 301 || res.status === 302) && res.headers) {
     const locationHeader = res.headers.get("location") ?? "";
     if (locationHeader) {
-      // Ensure absolute URL for parsing
       const absolute = locationHeader.startsWith("http")
         ? locationHeader
         : `https://www.youtube.com${locationHeader}`;
@@ -38,9 +44,64 @@ try {
       } catch {}
     }
   }
+
+  // If not live (no redirect), try to detect an upcoming scheduled stream by scraping the channel live page HTML.
+  if (!isLive) {
+    try {
+      const htmlRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
+        method: "GET",
+        redirect: "follow",
+      });
+      if (htmlRes.ok) {
+        const html = await htmlRes.text();
+
+        // Look for the first watch?v=VIDEO_ID occurrence (video id is 11 chars)
+        const vidMatch = html.match(/watch\?v=([A-Za-z0-9_-]{11})/);
+        if (vidMatch) {
+          const v = vidMatch[1];
+          embedUrl = `https://www.youtube.com/embed/${v}?rel=0`;
+
+          // Heuristics to decide if it's upcoming (some inline JSON includes isUpcoming: true)
+          const upcomingFlag = /"isUpcoming"\s*:\s*true/.test(html) || /"is_upcoming"\s*:\s*true/.test(html);
+          const liveFlag = /"isLive"\s*:\s*true/.test(html) || /"is_live"\s*:\s*true/.test(html);
+
+          if (liveFlag) {
+            isLive = true;
+            isUpcoming = false;
+          } else if (upcomingFlag) {
+            isUpcoming = true;
+            isLive = false;
+          } else {
+            // Unknown state: treat as upcoming (best effort) because the channel live page exposed a watch id even when not redirecting.
+            isUpcoming = true;
+          }
+
+          // Try to extract a start time from common JSON keys (ISO string or unix timestamp)
+          let startMatch = html.match(/"startTimestamp"\s*:\s*"([^"]+)"/);
+          if (!startMatch) startMatch = html.match(/"startTime"\s*:\s*"([^"]+)"/);
+          if (!startMatch) startMatch = html.match(/"start_time"\s*:\s*(\d{10,})/);
+          if (startMatch) {
+            const raw = startMatch[1] ?? startMatch[0];
+            // If we matched a numeric unix timestamp, convert to integer
+            const unix = raw.match(/^\d{10,}$/) ? parseInt(raw, 10) * 1000 : NaN;
+            if (!isNaN(unix)) {
+              upcomingStart = new Date(unix);
+            } else {
+              // Try parsing ISO date
+              const maybeDate = new Date(raw);
+              if (!Number.isNaN(maybeDate.getTime())) upcomingStart = maybeDate;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // ignore HTML parsing errors
+      console.warn("YouTube upcoming detection HTML fetch failed:", e);
+    }
+  }
 } catch (e) {
   // Fail silently. We don't want build to error if fetch is blocked.
-  console.warn("YouTube live detection failed:", e);
+  console.warn("YouTube live/upcoming detection failed:", e);
 }
 ---
 
@@ -85,14 +146,50 @@ try {
             Dacă playerul nu pornește automat, încercați <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a>.
           </p>
         </section>
+      ) : isUpcoming ? (
+        <section aria-labelledby="upcoming-heading" class="space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 rounded-md bg-amber-600 px-2 py-1 text-sm font-semibold text-white">
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="shrink-0">
+                <path d="M12 2v6"></path>
+              </svg>
+              Programat
+            </span>
+            <a href={CHANNEL_URL} class="text-sm underline">Vezi pe YouTube</a>
+          </div>
+
+          <h2 id="upcoming-heading" class="text-xl font-semibold">Următoarea transmisiune programată</h2>
+
+          <div class="w-full overflow-hidden rounded-md bg-black" role="region" aria-label="Transmisiune programată video">
+            <div style="position:relative;padding-top:56.25%">
+              <iframe
+                src={embedUrl}
+                title="Betel - transmisiune programată"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+              />
+            </div>
+          </div>
+
+          {upcomingStart ? (
+            <p class="text-sm text-muted-foreground">Programat pentru: {new Date(upcomingStart).toLocaleString("ro-RO", { dateStyle: "full", timeStyle: "short" })}</p>
+          ) : (
+            <p class="text-sm text-muted-foreground">Există o transmisiune programată. Urmăriți canalul pentru detalii.</p>
+          )}
+
+          <p class="text-sm text-muted-foreground">
+            Dacă playerul nu afișează încă transmisiunea, încercați <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a>.
+          </p>
+        </section>
       ) : (
-        <section aria-labelledby="upcoming-heading" class="space-y-6">
-          <h2 id="upcoming-heading" class="text-xl font-semibold">Momentan nu este niciun LIVE</h2>
+        <section aria-labelledby="none-heading" class="space-y-6">
+          <h2 id="none-heading" class="text-xl font-semibold">Momentan nu este niciun LIVE</h2>
 
           <div class="flex flex-col gap-4 md:flex-row md:items-center">
             <div class="flex-1 rounded-md border bg-card p-4">
               <p class="text-muted-foreground">
-                În prezent nu avem o transmisiune live activă. Când canalul va transmite în direct, playerul va apărea aici automat.
+                În prezent nu avem o transmisiune live activă. Când canalul va transmite în direct sau va programa o transmisiune, playerul va apărea aici automat.
               </p>
               <p class="mt-3 text-sm">
                 Urmăriți canalul nostru pentru notificări:
@@ -125,7 +222,7 @@ try {
             </aside>
           </div>
 
-          <p class="text-xs text-muted-foreground">Detecția LIVE se face la încărcarea paginii. Dacă credeți că e live dar playerul nu apare, încercați reîncărcarea paginii.</p>
+          <p class="text-xs text-muted-foreground">Detecția LIVE se face la încărcarea paginii. Dacă credeți că e live sau programat dar playerul nu apare, încercați reîncărcarea paginii.</p>
         </section>
       )}
     </main>
