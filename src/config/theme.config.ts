@@ -116,7 +116,7 @@ export const authors = [
   {
     slug: "samuel-bumbar",
     name: "Samuel BUMBAR",
-    bio: "Membru comitet, resposabil pentru departamentului Media",
+    bio: "Membru comitet, resposabil pentru departamentul Media",
     longBio:
       "long bio Samuel Bumbar",
     avatar: "/avatars/Samuel-Bumbar.svg",
