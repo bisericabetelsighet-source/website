@@ -32,7 +32,7 @@ const list = await postsByAuthor(author.slug);
 
     <section class="mt-2">
       <div class="mt-6 text-xs uppercase tracking-wider text-muted-foreground">
-        {list.length} {list.length === 1 ? "articol" : "articole"} scrise de {author.name.split(" ")[0]}
+        {list.length} {list.length === 1 ? "articol" : "articole"} {list.length === 1 ? "scris" : "scrise"} de {author.name.split(" ")[0]}
       </div>
       {list.map((post) => <PostCard post={post} variant="list" />)}
     </section>
