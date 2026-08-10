@@ -207,18 +207,10 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
     ></iframe>
   </div>
 
-  <!-- Gradient Overlays -->
+  <!-- Top Fade Overlay -->
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,oklch(0.1_0.02_70_/_0.68),oklch(0.16_0.02_80_/_0.38)_46%,oklch(0.98_0.01_90_/_0.1))] dark:bg-[linear-gradient(90deg,oklch(0.08_0.01_70_/_0.78),oklch(0.08_0.01_70_/_0.52)_48%,oklch(0.08_0.01_70_/_0.18))]"
-  />
-  <div
-    aria-hidden="true"
-    class="pointer-events-none absolute inset-x-0 top-0 z-10 h-40 bg-gradient-to-b from-black/45 via-black/18 to-transparent"
-  />
-  <div
-    aria-hidden="true"
-    class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-48 bg-gradient-to-t from-background via-background/72 to-transparent"
+    class="pointer-events-none absolute inset-x-0 top-0 z-10 h-40 bg-gradient-to-b from-white to-transparent dark:from-black dark:to-transparent"
   />
 </div>
 
