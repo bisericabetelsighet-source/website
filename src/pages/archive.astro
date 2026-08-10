@@ -3,12 +3,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Icon from "../components/Icon.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 
-// Import all videos from YouTube RSS feed
-import allVideos from "../data/youtube-videos.json";
-
-// Separate videos by category
-const slujbaVideos = allVideos.filter((v) => v.title.includes('Slujbă'));
-const otherVideos = allVideos.filter((v) => !v.title.includes('Slujbă'));
+/* Placeholder video archive items */
+const videos = [
+  { id: "sermon-2026-07-01", title: "Predică - 1 iulie 2026", thumb: "/thumbnails/sermon1.jpg", link: "https://youtu.be/J84Pma75c6I?si=PAJZbApN5Q0kth94" },
+  { id: "sermon-2026-06-24", title: "Predică - 24 iunie 2026", thumb: "/thumbnails/sermon2.jpg", link: "#" }
+];
 ---
 
 <BaseLayout title="Arhiva Video — BETEL" description="Înregistrări video ale slujbelor și evenimentelor noastre" canonical="/archive">
@@ -21,50 +20,22 @@ const otherVideos = allVideos.filter((v) => !v.title.includes('Slujbă'));
       <p class="text-muted-foreground mt-2">Vizionați înregistrări ale slujbelor, predicilor și evenimentelor.</p>
     </header>
 
-    {otherVideos.length > 0 && (
-      <section class="mt-12">
-        <h2 class="font-serif text-2xl font-semibold mb-6">Alte Înregistrări</h2>
-        <div aria-labelledby="video-archive" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {otherVideos.map((v) => (
-            <article key={v.id} class="rounded-md overflow-hidden border border-border">
-              <a href={v.link} class="block">
-                <img src={v.thumb} alt={`Miniatură ${v.title}`} class="w-full object-cover" />
-                <div class="p-4">
-                  <h3 class="text-lg font-medium">{v.title}</h3>
-                  <div class="mt-3">
-                    <span class="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                      <Icon name="play" class="h-4 w-4" /> Vizionați
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </article>
-          ))}
-        </div>
-      </section>
-    )}
-
-    {slujbaVideos.length > 0 && (
-      <section class="mt-16">
-        <h2 class="font-serif text-2xl font-semibold mb-6">Slujbe</h2>
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {slujbaVideos.map((v) => (
-            <article key={v.id} class="rounded-md overflow-hidden border border-border">
-              <a href={v.link} class="block">
-                <img src={v.thumb} alt={`Miniatură ${v.title}`} class="w-full object-cover" />
-                <div class="p-4">
-                  <h3 class="text-lg font-medium">{v.title}</h3>
-                  <div class="mt-3">
-                    <span class="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                      <Icon name="play" class="h-4 w-4" /> Vizionați
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </article>
-          ))}
-        </div>
-      </section>
-    )}
+    <main aria-labelledby="video-archive" class="grid gap-6 sm:grid-cols-2">
+      {videos.map((v) => (
+        <article key={v.id} class="rounded-md overflow-hidden border border-border">
+          <a href={v.link} class="block">
+            <img src={v.thumb} alt={`Miniatură ${v.title}`} class="w-full object-cover" />
+            <div class="p-4">
+              <h3 class="text-lg font-medium">{v.title}</h3>
+              <div class="mt-3">
+                <span class="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                  <Icon name="play" class="h-4 w-4" /> Vizionați
+                </span>
+              </div>
+            </div>
+          </a>
+        </article>
+      ))}
+    </main>
   </div>
 </BaseLayout>
