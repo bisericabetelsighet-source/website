@@ -89,6 +89,54 @@ export const authors = [
       "long bio Florin Pop",
     avatar: "/avatars/Florin-Pop.svg",
   },
+  {
+    slug: "alexandru-palas",
+    name: "Alexandru PALAS",
+    bio: "Prezbiter",
+    longBio:
+      "long bio Alex Palas",
+    avatar: "/avatars/Alexandru-Palas.svg",
+  },
+  {
+    slug: "claudiu-mihai",
+    name: "Claudiu MIHAI",
+    bio: "Prezbiter",
+    longBio:
+      "long bio Claudiu MIHAI",
+    avatar: "/avatars/Claudiu-Mihai.svg",
+  },
+  {
+    slug: "claudiu-mihai",
+    name: "Claudiu MIHAI",
+    bio: "Prezbiter",
+    longBio:
+      "long bio Claudiu Mihai",
+    avatar: "/avatars/Claudiu-Mihai.svg",
+  },
+  {
+    slug: "samuel-suciu",
+    name: "Samuel SUCIU",
+    bio: "Casier",
+    longBio:
+      "long bio Samuel Suciu",
+    avatar: "/avatars/Samuel-Suciu.svg",
+  },
+  {
+    slug: "samuel-bumbar",
+    name: "Samuel BUMBAR",
+    bio: "Membru comitet, resposabil pentru departamentului Media",
+    longBio:
+      "long bio Samuel Bumbar",
+    avatar: "/avatars/Samuel-Bumbar.svg",
+  },
+  {
+    slug: "stefan-mois",
+    name: "Ștefan MOIȘ",
+    bio: "Membru comitet, resposabil pentru departamentul Primire",
+    longBio:
+      "long bio Ștefan Moiș",
+    avatar: "/avatars/Ștefan-Moiș.svg",
+  },
 ];
 
 export const categories = [
