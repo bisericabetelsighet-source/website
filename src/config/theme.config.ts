@@ -102,14 +102,6 @@ export const authors = [
     name: "Claudiu MIHAI",
     bio: "Prezbiter",
     longBio:
-      "long bio Claudiu MIHAI",
-    avatar: "/avatars/Claudiu-Mihai.svg",
-  },
-  {
-    slug: "claudiu-mihai",
-    name: "Claudiu MIHAI",
-    bio: "Prezbiter",
-    longBio:
       "long bio Claudiu Mihai",
     avatar: "/avatars/Claudiu-Mihai.svg",
   },
