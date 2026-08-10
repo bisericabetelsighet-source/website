@@ -81,7 +81,6 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
   </section>
 
   <Newsletter />
-  </BaseLayout>
 
   <section class="border-b border-border/60">
     <div class="mx-auto max-w-6xl px-5 py-16">
@@ -191,6 +190,8 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
       </a>
     </div>
   </section>
+
+  </BaseLayout>
 
 <script>
   const latest = document.querySelector("[data-home-latest]");
