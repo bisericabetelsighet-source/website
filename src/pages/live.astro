@@ -16,30 +16,8 @@ const streamUrl = "https://youtube.com/live/RyyCch2T7Oo"; // e.g. "https://www.y
       <p class="text-muted-foreground mt-2">Urmăriți transmisiunile noastre în direct.</p>
     </header>
 
-    <main aria-label="Transmisiune live">
-      {streamUrl
-        ? (
-          <div class="aspect-video">
-            <iframe
-              src={streamUrl}
-              title="Transmisiune LIVE BETEL"
-              frameborder="0"
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              loading="lazy"
-            />
-          </div>
-        )
-        : (
-          <div class="rounded-md border border-border p-6 text-center text-muted-foreground">
-            Nu este transmisie live în momentul acesta. Verificați înapoi în timpul slujbelor.
-          </div>
-        )
-      }
-    </main>
-  </div>
-<div>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/RyyCch2T7Oo?si=AHu9eSn9xAsvQyVi" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div>
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/RyyCch2T7Oo?si=AHu9eSn9xAsvQyVi" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+    </div>
 
 </BaseLayout>
