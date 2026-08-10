@@ -194,8 +194,32 @@ const latest = (await sortedPosts()).filter((post) => post.slug !== featured.slu
 
   </BaseLayout>
 
-<div>
-<iframe width='100%' height='400px' src="https://api.mapbox.com/styles/v1/boroicaradu/cmsnto7h1013f01s819qxakuw.html?title=false&access_token=pk.eyJ1IjoiYm9yb2ljYXJhZHUiLCJhIjoiY21zbnRhYjc0MDc2bTJ3c2Rtbzc0bHA3OSJ9.jP4cD3vnNHSy_zrBkS3sNw&zoomwheel=false#19.21/47.9287674/23.9001945/38.4/63" title="Cool" style="border:none;"></iframe>
+
+<div class="relative overflow-hidden">
+  <!-- Map iframe -->
+  <div>
+    <iframe 
+      width="100%" 
+      height="400px" 
+      src="https://api.mapbox.com/styles/v1/boroicaradu/cmsnto7h1013f01s819qxakuw.html?title=false&access_token=pk.eyJ1IjoiYm9yb2ljYXJhZHUiLCJhIjoiY21zbnRhYjc0MDc2bTJ3c2Rtbzc0bHA3OSJ9.jP4cD3vnNHSy_zrBkS3sNw&zoomwheel=false#18.97/47.9286045/23.900207/38.4/69" 
+      title="Cool" 
+      style="border:none;"
+    ></iframe>
+  </div>
+
+  <!-- Gradient Overlays -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,oklch(0.1_0.02_70_/_0.68),oklch(0.16_0.02_80_/_0.38)_46%,oklch(0.98_0.01_90_/_0.1))] dark:bg-[linear-gradient(90deg,oklch(0.08_0.01_70_/_0.78),oklch(0.08_0.01_70_/_0.52)_48%,oklch(0.08_0.01_70_/_0.18))]"
+  />
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-x-0 top-0 z-10 h-40 bg-gradient-to-b from-black/45 via-black/18 to-transparent"
+  />
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-48 bg-gradient-to-t from-background via-background/72 to-transparent"
+  />
 </div>
 
 
