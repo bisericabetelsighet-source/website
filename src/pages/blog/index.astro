@@ -154,8 +154,8 @@ const posts = await sortedPosts();
 
       const totalPages = Math.max(1, Math.ceil(matches.length / pageSize));
       moreWrap.hidden = visibleCount >= matches.length;
-      more.textContent = `Load more (${matches.length - visibleCount} remaining)`;
-      pageText.textContent = `Page ${state.page} of ${totalPages}`;
+      more.textContent = `Încarcă mai multe (${matches.length - visibleCount} articole rămase)`;
+      pageText.textContent = `Pagina ${state.page} din ${totalPages}`;
 
       applyLinkState(categoryLinks, state.cat, activeCategory, inactiveCategory, "data-category-filter");
       applyLinkState(tagLinks, state.tag, activeTag, inactiveTag, "data-tag-filter");
