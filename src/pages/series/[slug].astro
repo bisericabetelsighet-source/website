@@ -1,0 +1,38 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import PostCard from "../../components/PostCard.astro";
+import { SITE, series, postsBySeries } from "../../lib/blog-data.js";
+
+export function getStaticPaths() {
+  return series.map((series) => ({ params: { slug: series.slug }, props: { series } }));
+}
+
+const { series } = Astro.props;
+const list = await postsBySeries(series.slug);
+---
+
+<BaseLayout
+  title={`#${series.name} - ${SITE.name}`}
+  description={`Toate articolele din seria ${series.name}.`}
+  canonical={`/series/${series.slug}`}
+>
+  <div class="mx-auto max-w-4xl px-5 py-12">
+    <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Serii" }, { label: `#${series.name}` }]} />
+    <header class="mt-6 border-b border-border pb-8">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Serie</div>
+      <h1 class="mt-2 font-serif text-4xl font-semibold">#{series.name}</h1>
+      <p class="mt-3 text-muted-foreground">{list.length} {list.length === 1 ? "articol" : "articole"}.</p>
+    </header>
+
+    {
+      list.length === 0 ? (
+        <div class="mt-12 rounded-md border border-dashed border-border py-20 text-center text-muted-foreground">
+          Niciun articol în această serie, încă.
+        </div>
+      ) : (
+        list.map((post) => <PostCard post={post} variant="list" />)
+      )
+    }
+  </div>
+</BaseLayout>
