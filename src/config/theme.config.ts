@@ -151,3 +151,8 @@ export const tags = [
   { slug: "soteriology", name: "Soteriologie" },
   { slug: "eschatology", name: "Escatologie" },
 ];
+
+export const series = [
+  { slug: "second-coming", name: "Revenirea Domnului Isus" },
+  { slug: "second-coming-signs", name: "Semnele revenirii Domnului Isus" },
+];
