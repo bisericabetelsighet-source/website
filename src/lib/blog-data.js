@@ -33,10 +33,13 @@ export const getPost = async (slug) => (await posts()).find((post) => post.slug 
 export const getAuthor = (slug) => authors.find((author) => author.slug === slug);
 export const getCategory = (slug) => categories.find((category) => category.slug === slug);
 export const getTag = (slug) => tags.find((tag) => tag.slug === slug);
+export const getSeries = (slug) => series.find((series) => series.slug === slug);
 export const postsByCategory = async (slug) =>
   (await sortedPosts()).filter((post) => post.category === slug);
 export const postsByTag = async (slug) =>
   (await sortedPosts()).filter((post) => post.tags.includes(slug));
+export const postsBySeries = async (slug) =>
+  (await sortedPosts()).filter((post) => post.series.includes(slug));
 export const postsByAuthor = async (slug) =>
   (await sortedPosts()).filter((post) => post.author === slug);
 export const sortedPosts = async () =>
