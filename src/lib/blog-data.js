@@ -1,6 +1,6 @@
 import { getCollection } from "astro:content";
-export { SITE, authors, categories, tags, series } from "../config/theme.config.ts";
-import { authors, categories, tags, series } from "../config/theme.config.ts";
+export { SITE, authors, categories, tags} from "../config/theme.config.ts";
+import { authors, categories, tags} from "../config/theme.config.ts";
 
 const isoDate = (date) => date?.toISOString().slice(0, 10);
 const wordsPerMinute = 220;
@@ -38,8 +38,6 @@ export const postsByCategory = async (slug) =>
   (await sortedPosts()).filter((post) => post.category === slug);
 export const postsByTag = async (slug) =>
   (await sortedPosts()).filter((post) => post.tags.includes(slug));
-export const postsBySeries = async (slug) =>
-  (await sortedPosts()).filter((post) => post.series.includes(slug));
 export const postsByAuthor = async (slug) =>
   (await sortedPosts()).filter((post) => post.author === slug);
 export const sortedPosts = async () =>
