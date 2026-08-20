@@ -38,7 +38,7 @@ try {
         const url = new URL(absolute);
         const v = url.searchParams.get("v");
         if (v) {
-          embedUrl = `https://www.youtube.com/embed/${v}?rel=0`;
+          embedUrl = `https://www.youtube.com/channel/${CHANNEL_ID}/live`;
           isLive = true;
         }
       } catch {}
