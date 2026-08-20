@@ -59,7 +59,7 @@ try {
         const vidMatch = html.match(/watch\?v=([A-Za-z0-9_-]{11})/);
         if (vidMatch) {
           const v = vidMatch[1];
-          embedUrl = `https://www.youtube.com/embed/${v}?rel=0`;
+          embedUrl = `https://www.youtube.com/channel/${CHANNEL_ID}/live`;
 
           // Heuristics to decide if it's upcoming (some inline JSON includes isUpcoming: true)
           const upcomingFlag = /"isUpcoming"\s*:\s*true/.test(html) || /"is_upcoming"\s*:\s*true/.test(html);
