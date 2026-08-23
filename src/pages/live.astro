@@ -13,7 +13,6 @@ const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
   4. Exclude published videos (regular uploads) and playlists.
   
   This uses best-effort server-side HTML parsing with zero client JS and no external API keys.
-  YouTube's HTML structure is parsed for video IDs and metadata flags.
 */
 
 interface VideoInfo {
@@ -35,7 +34,7 @@ function extractTimestamp(html: string, keys: string[]): Date | null {
       const date = new Date(match[1]);
       if (!Number.isNaN(date.getTime())) return date;
     }
-    
+
     // Try numeric format: "key":1234567890
     match = html.match(new RegExp(`"${key}"\\s*:\\s*(\\d{10,})`));
     if (match && match[1]) {
@@ -47,56 +46,89 @@ function extractTimestamp(html: string, keys: string[]): Date | null {
 }
 
 /**
- * Extract all video IDs from HTML
+ * Extract all video metadata blocks from HTML
+ * Returns array of {videoId, htmlBlock} for contextual analysis
  */
-function extractVideoIds(html: string): string[] {
-  const matches = html.matchAll(/watch\?v=([A-Za-z0-9_-]{11})/g);
-  const ids: string[] = [];
+function extractVideoBlocks(html: string): Array<{ videoId: string; block: string }> {
+  const blocks: Array<{ videoId: string; block: string }> = [];
   const seen = new Set<string>();
-  for (const match of matches) {
-    if (match[1] && !seen.has(match[1])) {
-      ids.push(match[1]);
-      seen.add(match[1]);
-    }
+
+  // Find all video IDs with their surrounding context
+  const regex = /watch\?v=([A-Za-z0-9_-]{11})/g;
+  let match;
+
+  while ((match = regex.exec(html)) !== null) {
+    const videoId = match[1];
+    if (seen.has(videoId)) continue;
+    seen.add(videoId);
+
+    // Extract a large context window around the video ID
+    const idIndex = match.index;
+    const contextStart = Math.max(0, idIndex - 3000);
+    const contextEnd = Math.min(html.length, idIndex + 3000);
+    const block = html.substring(contextStart, contextEnd);
+
+    blocks.push({ videoId, block });
   }
-  return ids;
+
+  return blocks;
 }
 
 /**
- * Check if a video ID block contains live indicators
+ * Check if a block contains live indicators
  */
-function isLiveVideo(htmlSection: string): boolean {
+function isLiveVideo(block: string): boolean {
   return (
-    /"isLive"\s*:\s*true/.test(htmlSection) ||
-    /"is_live"\s*:\s*true/.test(htmlSection) ||
-    /"isCurrentlyLive"\s*:\s*true/.test(htmlSection)
+    /"isLive"\s*:\s*true/.test(block) ||
+    /"is_live"\s*:\s*true/.test(block) ||
+    /"isCurrentlyLive"\s*:\s*true/.test(block) ||
+    /"liveStatus"\s*:\s*"LIVE"/.test(block)
   );
 }
 
 /**
- * Check if a video ID block contains upcoming indicators
+ * Check if a block contains upcoming indicators
  */
-function isUpcomingVideo(htmlSection: string): boolean {
+function isUpcomingVideo(block: string): boolean {
   return (
-    /"isUpcoming"\s*:\s*true/.test(htmlSection) ||
-    /"is_upcoming"\s*:\s*true/.test(htmlSection)
+    /"isUpcoming"\s*:\s*true/.test(block) ||
+    /"is_upcoming"\s*:\s*true/.test(block) ||
+    /"liveStatus"\s*:\s*"UPCOMING"/.test(block)
   );
 }
 
 /**
- * Check if a video is a published/regular upload (not a stream)
- * Look for indicators that it's a VOD/regular video, not a live event
+ * Check if a block indicates this is a regular published video (not a stream)
  */
-function isPublishedVideo(htmlSection: string): boolean {
-  // Look for indicators that this is a regular published video
+function isRegularPublishedVideo(block: string): boolean {
+  // If it explicitly says it's upcoming or live, it's NOT a regular video
+  if (isUpcomingVideo(block) || isLiveVideo(block)) {
+    return false;
+  }
+
+  // Check for indicators that this is a regular published video
   return (
-    /"isVideo"\s*:\s*true/.test(htmlSection) ||
-    (/"isPlaylist"\s*:\s*true/.test(htmlSection))
+    /"videoType"\s*:\s*"UPLOADED_VIDEO"/.test(block) ||
+    /"is_upload"/.test(block)
+  );
+}
+
+/**
+ * Check if a block is from a playlist or collection
+ */
+function isPlaylist(block: string): boolean {
+  return (
+    /"isPlaylist"\s*:\s*true/.test(block) ||
+    /"playlistId"/.test(block) ||
+    /"PLAYLIST"/.test(block)
   );
 }
 
 try {
   // Step 1: Check for currently active live stream via redirect
+  // This is the most reliable indicator - YouTube only redirects when there's an active live
+  let liveVideoId: string | null = null;
+
   try {
     const liveRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
       method: "GET",
@@ -111,15 +143,16 @@ try {
     if ((liveRes.status === 301 || liveRes.status === 302) && liveRes.headers) {
       const locationHeader = liveRes.headers.get("location") ?? "";
       if (locationHeader) {
-        const absolute = locationHeader.startsWith("http")
-          ? locationHeader
-          : `https://www.youtube.com${locationHeader}`;
         try {
+          const absolute = locationHeader.startsWith("http")
+            ? locationHeader
+            : `https://www.youtube.com${locationHeader}`;
           const url = new URL(absolute);
-          const v = url.searchParams.get("v");
-          if (v) {
+          liveVideoId = url.searchParams.get("v");
+
+          if (liveVideoId) {
             currentState = {
-              videoId: v,
+              videoId: liveVideoId,
               type: "live",
             };
           }
@@ -147,26 +180,25 @@ try {
 
       if (channelRes.ok) {
         const html = await channelRes.text();
-        const videoIds = extractVideoIds(html);
+        const videoBlocks = extractVideoBlocks(html);
 
         let upcomingCandidate: VideoInfo | null = null;
         let completedCandidate: VideoInfo | null = null;
 
-        // Analyze each video ID in order of appearance
-        for (const videoId of videoIds) {
-          // Extract a reasonable context window around each video ID
-          const idIndex = html.indexOf(`watch?v=${videoId}`);
-          const contextStart = Math.max(0, idIndex - 2000);
-          const contextEnd = Math.min(html.length, idIndex + 2000);
-          const context = html.substring(contextStart, contextEnd);
-
-          // Skip if this looks like a published video or playlist
-          if (isPublishedVideo(context)) {
+        // Analyze each video block
+        for (const { videoId, block } of videoBlocks) {
+          // Skip playlists
+          if (isPlaylist(block)) {
             continue;
           }
 
-          // Check for live video
-          if (isLiveVideo(context)) {
+          // Skip regular published videos
+          if (isRegularPublishedVideo(block)) {
+            continue;
+          }
+
+          // Check for live video (shouldn't happen here if redirect worked, but be safe)
+          if (isLiveVideo(block)) {
             currentState = {
               videoId,
               type: "live",
@@ -174,25 +206,26 @@ try {
             break;
           }
 
-          // Check for upcoming scheduled stream
-          if (isUpcomingVideo(context) && !upcomingCandidate) {
-            const startTime = extractTimestamp(context, [
+          // Check for upcoming scheduled stream - take the first one
+          if (isUpcomingVideo(block) && !upcomingCandidate) {
+            const startTime = extractTimestamp(block, [
               "startTimestamp",
               "startTime",
               "start_time",
               "scheduledStartTime",
+              "upcomingEventData",
             ]);
             upcomingCandidate = {
               videoId,
               type: "upcoming",
               startTime: startTime || undefined,
             };
-            // Don't break; continue to look for a live or closer upcoming
+            // Keep looking in case there's a live status we missed
           }
 
-          // If not upcoming and not published, treat as completed/VOD
-          if (!isUpcomingVideo(context) && !completedCandidate) {
-            const publishTime = extractTimestamp(context, [
+          // If no flags match, treat as completed/VOD (most recent first)
+          if (!upcomingCandidate && !completedCandidate) {
+            const publishTime = extractTimestamp(block, [
               "uploadDate",
               "publish_date",
               "publishedAt",
@@ -225,7 +258,7 @@ const isLive = currentState?.type === "live";
 const isUpcoming = currentState?.type === "upcoming";
 const isCompleted = currentState?.type === "completed";
 const embedUrl = currentState
-  ? `https://www.youtube.com/embed/${currentState.videoId}`
+  ? `https://www.youtube.com/embed/${currentState.videoId}?start=0`
   : "";
 const startTime = currentState?.startTime || null;
 ---
@@ -371,7 +404,7 @@ const startTime = currentState?.startTime || null;
           )}
 
           <p class="text-sm text-muted-foreground">
-            Urmăriți <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a> pentru urmând programari de live.
+            Urmăriți <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a> pentru următoarele programe de live.
           </p>
         </section>
       ) : (
@@ -406,7 +439,7 @@ const startTime = currentState?.startTime || null;
                   href={CHANNEL_URL + "/?sub_confirmation=1"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="mt-3 inline-block w-full rounded-md border px-3 py-2 text-center text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  class="mt3 inline-block w-full rounded-md border px-3 py-2 text-center text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   Abonează-te
                 </a>
