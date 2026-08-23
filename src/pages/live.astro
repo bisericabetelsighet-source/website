@@ -8,18 +8,14 @@ const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
 /*
   Live & upcoming detection strategy (server-side):
   1. Check if channel is currently LIVE (redirect check)
-  2. If not live, check for upcoming scheduled stream
-  3. If not upcoming, show fallback message or latest VOD
-  
-  Uses best-effort server-side detection with zero external API keys.
-  YouTube's /channel/{id}/live will either:
-  - Redirect (301/302) to /watch?v=LIVE_VIDEO_ID when actively streaming
-  - Return 200 with the channel's live page (shows scheduled or no stream)
+  2. If not live, fetch page and look for latest stream (live or scheduled)
+  3. Use YouTube's channel live embed which always shows correct content
 */
 
 interface LiveStatus {
   isLive: boolean;
   isUpcoming: boolean;
+  hasContent: boolean;
   videoId?: string;
   startTime?: Date;
 }
@@ -27,11 +23,14 @@ interface LiveStatus {
 let liveStatus: LiveStatus = {
   isLive: false,
   isUpcoming: false,
+  hasContent: false,
 };
 
 try {
-  // Fetch the channel live page with redirect:manual to detect current state
-  const res = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
+  // Step 1: Check for active live via redirect
+  console.log(`[Live Detection] Checking ${CHANNEL_ID} for active streams...`);
+  
+  const redirectRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
     method: "GET",
     redirect: "manual",
     headers: {
@@ -40,21 +39,28 @@ try {
     },
   });
 
+  console.log(`[Live Detection] Redirect check status: ${redirectRes.status}`);
+
   // Check if there's a redirect (means currently live)
-  if ((res.status === 301 || res.status === 302) && res.headers) {
-    const location = res.headers.get("location") || "";
+  if ((redirectRes.status === 301 || redirectRes.status === 302) && redirectRes.headers) {
+    const location = redirectRes.headers.get("location") || "";
+    console.log(`[Live Detection] Redirect location: ${location}`);
+    
     if (location.includes("/watch?v=")) {
       liveStatus.isLive = true;
-      // Extract video ID from redirect location
+      liveStatus.hasContent = true;
       const match = location.match(/v=([A-Za-z0-9_-]{11})/);
       if (match) {
         liveStatus.videoId = match[1];
+        console.log(`[Live Detection] ✓ LIVE detected. Video ID: ${liveStatus.videoId}`);
       }
     }
   }
 
-  // If not live via redirect, fetch the page to check for upcoming stream
+  // Step 2: If not live, fetch page to check for upcoming or get latest stream
   if (!liveStatus.isLive) {
+    console.log(`[Live Detection] No live redirect. Fetching page for upcoming/archived streams...`);
+    
     try {
       const pageRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
         method: "GET",
@@ -67,15 +73,22 @@ try {
 
       if (pageRes.ok) {
         const html = await pageRes.text();
+        console.log(`[Live Detection] Page fetched. Length: ${html.length} chars`);
 
-        // Check for upcoming indicators in the page
+        // Extract all video IDs
+        const videoMatches = Array.from(html.matchAll(/watch\?v=([A-Za-z0-9_-]{11})/g));
+        console.log(`[Live Detection] Found ${videoMatches.length} video references`);
+
+        // Check for upcoming indicators (these are high priority)
         if (/"isUpcoming"\s*:\s*true/.test(html) || /"liveStatus"\s*:\s*"UPCOMING"/.test(html)) {
+          console.log(`[Live Detection] ✓ UPCOMING stream detected`);
           liveStatus.isUpcoming = true;
+          liveStatus.hasContent = true;
 
-          // Try to extract the upcoming video ID
-          const vidMatch = html.match(/watch\?v=([A-Za-z0-9_-]{11})/);
-          if (vidMatch) {
-            liveStatus.videoId = vidMatch[1];
+          // Extract the upcoming video ID
+          if (videoMatches.length > 0) {
+            liveStatus.videoId = videoMatches[0][1];
+            console.log(`[Live Detection] Upcoming video ID: ${liveStatus.videoId}`);
           }
 
           // Try to extract scheduled start time
@@ -85,28 +98,45 @@ try {
 
           if (timeMatch && timeMatch[1]) {
             const timeStr = timeMatch[1];
-            // Handle both ISO format and unix timestamp
             const parsed = timeStr.match(/^\d{10,}$/)
               ? new Date(parseInt(timeStr, 10) * 1000)
               : new Date(timeStr);
 
             if (!Number.isNaN(parsed.getTime())) {
               liveStatus.startTime = parsed;
+              console.log(`[Live Detection] Start time: ${parsed.toISOString()}`);
             }
           }
+        } else if (videoMatches.length > 0) {
+          // No upcoming flag, but we found videos - use the first one (latest stream)
+          console.log(`[Live Detection] ✓ No upcoming, but found stream content`);
+          liveStatus.hasContent = true;
+          liveStatus.videoId = videoMatches[0][1];
+          console.log(`[Live Detection] Using latest stream video ID: ${liveStatus.videoId}`);
+        } else {
+          console.log(`[Live Detection] No streams found on channel`);
         }
+      } else {
+        console.warn(`[Live Detection] Page fetch returned status: ${pageRes.status}`);
       }
     } catch (e) {
-      console.warn("Failed to fetch channel live page:", e);
+      console.warn(`[Live Detection] Failed to fetch channel live page:`, e);
     }
   }
 } catch (e) {
-  console.warn("YouTube detection failed:", e);
+  console.warn(`[Live Detection] Detection failed:`, e);
 }
 
-const { isLive, isUpcoming, videoId, startTime } = liveStatus;
+console.log(`[Live Detection] Final status:`, {
+  isLive: liveStatus.isLive,
+  isUpcoming: liveStatus.isUpcoming,
+  hasContent: liveStatus.hasContent,
+  videoId: liveStatus.videoId,
+});
 
-// Use channel live URL directly for embeds - YouTube handles it properly
+const { isLive, isUpcoming, hasContent } = liveStatus;
+
+// Use channel live URL - YouTube's embed handles routing automatically
 const embedUrl = `https://www.youtube.com/embed/live/${CHANNEL_ID}?autoplay=1`;
 ---
 
@@ -192,10 +222,10 @@ const embedUrl = `https://www.youtube.com/embed/live/${CHANNEL_ID}?autoplay=1`;
             </div>
           </div>
 
-          {startTime ? (
+          {liveStatus.startTime ? (
             <p class="text-sm text-muted-foreground">
-              Programat pentru: <time datetime={startTime.toISOString()}>
-                {startTime.toLocaleString("ro-RO", { dateStyle: "full", timeStyle: "short" })}
+              Programat pentru: <time datetime={liveStatus.startTime.toISOString()}>
+                {liveStatus.startTime.toLocaleString("ro-RO", { dateStyle: "full", timeStyle: "short" })}
               </time>
             </p>
           ) : (
@@ -204,6 +234,44 @@ const embedUrl = `https://www.youtube.com/embed/live/${CHANNEL_ID}?autoplay=1`;
 
           <p class="text-sm text-muted-foreground">
             Dacă playerul nu afișează încă transmisiunea, încercați <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a>.
+          </p>
+        </section>
+      ) : hasContent ? (
+        <section aria-labelledby="archive-heading" class="space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-2 py-1 text-sm font-semibold text-white">
+              <svg
+                aria-hidden="true"
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                class="shrink-0"
+              >
+                <path d="M9 12l2 2 4-4"></path>
+              </svg>
+              Arhivă
+            </span>
+            <a href={CHANNEL_URL} class="text-sm underline">Vezi mai multe pe YouTube</a>
+          </div>
+
+          <h2 id="archive-heading" class="text-xl font-semibold">Ultima transmisiune live</h2>
+
+          <div class="w-full overflow-hidden rounded-md bg-black" role="region" aria-label="Transmisiune live din arhivă">
+            <div style="position:relative;padding-top:56.25%">
+              <iframe
+                src={embedUrl}
+                title="Betel - transmisiune live din arhivă"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                loading="lazy"
+                style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+              />
+            </div>
+          </div>
+
+          <p class="text-sm text-muted-foreground">
+            Vizionați transmisiunile noastre live din arhivă. Urmăriți <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a> pentru programări de live.
           </p>
         </section>
       ) : (
