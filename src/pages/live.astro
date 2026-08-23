@@ -17,9 +17,11 @@ interface VideoInfo {
 let streamInfo: VideoInfo | null = null;
 
 try {
-  console.log(`[YouTube API] Searching for recent videos on channel ${CHANNEL_ID}...`);
+  console.log(`[YouTube API] ======== START LIVE DETECTION ========`);
+  console.log(`[YouTube API] Channel: ${CHANNEL_ID}`);
+  console.log(`[YouTube API] Searching for recent videos...`);
 
-  // Search for recent uploads on the channel (no eventType filter)
+  // Search for recent uploads on the channel
   const searchRes = await fetch(
     `https://www.googleapis.com/youtube/v3/search?` +
     `part=snippet&` +
@@ -31,13 +33,19 @@ try {
     { method: "GET" }
   );
 
-  if (searchRes.ok) {
+  if (!searchRes.ok) {
+    console.error(`[YouTube API] Search failed with status ${searchRes.status}`);
+  } else {
     const searchData = await searchRes.json();
-    const videoIds = searchData.items?.map((item: any) => item.id.videoId).join(",") || "";
-    console.log(`[YouTube API] Found ${searchData.items?.length || 0} recent videos`);
+    const videos = searchData.items || [];
+    console.log(`[YouTube API] Found ${videos.length} recent videos`);
 
-    if (videoIds) {
-      // Get detailed info for all videos at once
+    if (videos.length === 0) {
+      console.log(`[YouTube API] No videos found on channel`);
+    } else {
+      const videoIds = videos.map((item: any) => item.id.videoId).join(",");
+
+      // Get detailed info for all videos
       const videoRes = await fetch(
         `https://www.googleapis.com/youtube/v3/videos?` +
         `part=snippet,liveStreamingDetails&` +
@@ -46,110 +54,171 @@ try {
         { method: "GET" }
       );
 
-      if (videoRes.ok) {
+      if (!videoRes.ok) {
+        console.error(`[YouTube API] Videos details fetch failed with status ${videoRes.status}`);
+      } else {
         const videoData = await videoRes.json();
-        console.log(`[YouTube API] Retrieved details for ${videoData.items?.length || 0} videos`);
+        const allVideos = videoData.items || [];
+        console.log(`[YouTube API] Retrieved ${allVideos.length} video details\n`);
 
-        if (videoData.items) {
-          let upcomingFallback: VideoInfo | null = null;
-          let completedFallback: VideoInfo | null = null;
+        let upcomingFallback: VideoInfo | null = null;
+        let completedFallback: VideoInfo | null = null;
 
-          // PASS 1: Look for CURRENTLY LIVE streams
-          console.log(`[YouTube API] PASS 1: Looking for LIVE streams...`);
-          for (let i = 0; i < videoData.items.length; i++) {
-            const video = videoData.items[i];
+        // PASS 1: Look for CURRENTLY LIVE streams
+        console.log(`[YouTube API] ═══════════════════════════════════════`);
+        console.log(`[YouTube API] PASS 1: HUNTING FOR CURRENTLY LIVE STREAM`);
+        console.log(`[YouTube API] ═══════════════════════════════════════`);
+
+        for (let i = 0; i < allVideos.length; i++) {
+          const video = allVideos[i];
+          const videoId = video.id;
+          const title = video.snippet.title;
+          const broadcastStatus = video.snippet.liveBroadcastContent;
+          const liveDetails = video.liveStreamingDetails || {};
+          const actualStartTime = liveDetails.actualStartTime;
+          const actualEndTime = liveDetails.actualEndTime;
+          const scheduledStartTime = liveDetails.scheduledStartTime;
+          const concurrentViewers = liveDetails.concurrentViewers;
+
+          console.log(`\n[YouTube API] [VIDEO ${i}] "${title}"`);
+          console.log(`[YouTube API] [VIDEO ${i}] ID: ${videoId}`);
+          console.log(`[YouTube API] [VIDEO ${i}] liveBroadcastContent: "${broadcastStatus}"`);
+          console.log(`[YouTube API] [VIDEO ${i}] actualStartTime: ${actualStartTime ? `"${actualStartTime}"` : "null"}`);
+          console.log(`[YouTube API] [VIDEO ${i}] actualEndTime: ${actualEndTime ? `"${actualEndTime}"` : "null"}`);
+          console.log(`[YouTube API] [VIDEO ${i}] scheduledStartTime: ${scheduledStartTime ? `"${scheduledStartTime}"` : "null"}`);
+          console.log(`[YouTube API] [VIDEO ${i}] concurrentViewers: ${concurrentViewers ? `"${concurrentViewers}"` : "null"}`);
+
+          // Test each condition
+          const cond1 = broadcastStatus === "live";
+          const cond2 = !!actualStartTime;
+          const cond3 = !actualEndTime;
+          const cond4 = !!concurrentViewers;
+
+          console.log(`[YouTube API] [VIDEO ${i}] Condition tests:`);
+          console.log(`[YouTube API] [VIDEO ${i}]   ✓ broadcastStatus === "live" ? ${cond1}`);
+          console.log(`[YouTube API] [VIDEO ${i}]   ✓ actualStartTime exists ? ${cond2}`);
+          console.log(`[YouTube API] [VIDEO ${i}]   ✓ actualEndTime is empty ? ${cond3}`);
+          console.log(`[YouTube API] [VIDEO ${i}]   ✓ concurrentViewers exists ? ${cond4}`);
+
+          const isCurrentlyLive = cond1 && cond2 && cond3;
+          console.log(`[YouTube API] [VIDEO ${i}]   ► IS CURRENTLY LIVE (cond1 && cond2 && cond3) ? ${isCurrentlyLive}`);
+
+          if (isCurrentlyLive) {
+            streamInfo = {
+              videoId: videoId,
+              title: title,
+              type: "live",
+            };
+            console.log(`[YouTube API] ✓✓✓ MATCH FOUND: Using this LIVE video`);
+            break;
+          } else {
+            console.log(`[YouTube API] [VIDEO ${i}] REJECTED - Not currently live`);
+          }
+        }
+
+        // PASS 2: If no live found, look for UPCOMING
+        if (!streamInfo) {
+          console.log(`\n[YouTube API] ═══════════════════════════════════════`);
+          console.log(`[YouTube API] PASS 2: HUNTING FOR UPCOMING/SCHEDULED STREAM`);
+          console.log(`[YouTube API] ═══════════════════════════════════════`);
+
+          for (let i = 0; i < allVideos.length; i++) {
+            const video = allVideos[i];
             const videoId = video.id;
             const title = video.snippet.title;
-            const liveDetails = video.liveStreamingDetails || {};
             const broadcastStatus = video.snippet.liveBroadcastContent;
+            const liveDetails = video.liveStreamingDetails || {};
+            const scheduledStartTime = liveDetails.scheduledStartTime;
+            const actualStartTime = liveDetails.actualStartTime;
 
-            console.log(`[YouTube API] [${i}] ${title}`);
-            console.log(`[YouTube API] [${i}]   Status: ${broadcastStatus} | Start: ${liveDetails.actualStartTime || "null"} | End: ${liveDetails.actualEndTime || "null"}`);
+            console.log(`\n[YouTube API] [VIDEO ${i}] "${title}"`);
+            console.log(`[YouTube API] [VIDEO ${i}] liveBroadcastContent: "${broadcastStatus}"`);
+            console.log(`[YouTube API] [VIDEO ${i}] scheduledStartTime: ${scheduledStartTime ? `"${scheduledStartTime}"` : "null"}`);
+            console.log(`[YouTube API] [VIDEO ${i}] actualStartTime: ${actualStartTime ? `"${actualStartTime}"` : "null"}`);
 
-            // Check if CURRENTLY LIVE: broadcastStatus="live" AND actualStartTime AND no actualEndTime
-            if (
-              broadcastStatus === "live" &&
-              liveDetails.actualStartTime &&
-              !liveDetails.actualEndTime
-            ) {
-              streamInfo = {
+            const cond1 = broadcastStatus === "upcoming";
+            const cond2 = !!scheduledStartTime;
+            const cond3 = !actualStartTime;
+
+            console.log(`[YouTube API] [VIDEO ${i}] Condition tests:`);
+            console.log(`[YouTube API] [VIDEO ${i}]   ✓ broadcastStatus === "upcoming" ? ${cond1}`);
+            console.log(`[YouTube API] [VIDEO ${i}]   ✓ scheduledStartTime exists ? ${cond2}`);
+            console.log(`[YouTube API] [VIDEO ${i}]   ✓ actualStartTime is empty ? ${cond3}`);
+
+            const isUpcoming = cond1 && cond2 && cond3;
+            console.log(`[YouTube API] [VIDEO ${i}]   ► IS UPCOMING (cond1 && cond2 && cond3) ? ${isUpcoming}`);
+
+            if (isUpcoming) {
+              upcomingFallback = {
                 videoId: videoId,
                 title: title,
-                type: "live",
+                type: "upcoming",
+                scheduledStartTime: new Date(scheduledStartTime),
               };
-              console.log(`[YouTube API] ✓✓✓ FOUND LIVE: ${videoId}`);
+              console.log(`[YouTube API] ✓ MATCH FOUND: Using this UPCOMING video`);
               break;
+            } else {
+              console.log(`[YouTube API] [VIDEO ${i}] REJECTED - Not upcoming`);
             }
           }
 
-          // PASS 2: If no live found, look for UPCOMING
-          if (!streamInfo) {
-            console.log(`[YouTube API] PASS 2: No live found. Looking for UPCOMING streams...`);
-            for (let i = 0; i < videoData.items.length; i++) {
-              const video = videoData.items[i];
-              const videoId = video.id;
-              const title = video.snippet.title;
-              const liveDetails = video.liveStreamingDetails || {};
-              const broadcastStatus = video.snippet.liveBroadcastContent;
+          if (upcomingFallback) {
+            streamInfo = upcomingFallback;
+          }
+        }
 
-              if (
-                broadcastStatus === "upcoming" &&
-                liveDetails.scheduledStartTime
-              ) {
-                upcomingFallback = {
-                  videoId: videoId,
-                  title: title,
-                  type: "upcoming",
-                  scheduledStartTime: new Date(liveDetails.scheduledStartTime),
-                };
-                console.log(`[YouTube API] ℹ FOUND UPCOMING: ${videoId}`);
-                break;
-              }
-            }
+        // PASS 3: If no live or upcoming, use first non-live video as archive
+        if (!streamInfo) {
+          console.log(`\n[YouTube API] ═══════════════════════════════════════`);
+          console.log(`[YouTube API] PASS 3: HUNTING FOR ARCHIVE/COMPLETED STREAM`);
+          console.log(`[YouTube API] ═══════════════════════════════════════`);
 
-            if (upcomingFallback) {
-              streamInfo = upcomingFallback;
+          for (let i = 0; i < allVideos.length; i++) {
+            const video = allVideos[i];
+            const videoId = video.id;
+            const title = video.snippet.title;
+            const broadcastStatus = video.snippet.liveBroadcastContent;
+            const publishedAt = video.snippet.publishedAt;
+
+            console.log(`\n[YouTube API] [VIDEO ${i}] "${title}"`);
+            console.log(`[YouTube API] [VIDEO ${i}] liveBroadcastContent: "${broadcastStatus}"`);
+            console.log(`[YouTube API] [VIDEO ${i}] publishedAt: "${publishedAt}"`);
+
+            const isNotLive = broadcastStatus !== "live";
+            console.log(`[YouTube API] [VIDEO ${i}]   ✓ broadcastStatus !== "live" ? ${isNotLive}`);
+
+            if (isNotLive) {
+              completedFallback = {
+                videoId: videoId,
+                title: title,
+                type: "completed",
+                startTime: new Date(publishedAt),
+              };
+              console.log(`[YouTube API] ✓ MATCH FOUND: Using this ARCHIVE video`);
+              break;
+            } else {
+              console.log(`[YouTube API] [VIDEO ${i}] REJECTED - Still marked as live`);
             }
           }
 
-          // PASS 3: If no live or upcoming, use first non-live video as archive fallback
-          if (!streamInfo) {
-            console.log(`[YouTube API] PASS 3: No live/upcoming found. Looking for archive fallback...`);
-            for (let i = 0; i < videoData.items.length; i++) {
-              const video = videoData.items[i];
-              const videoId = video.id;
-              const title = video.snippet.title;
-              const broadcastStatus = video.snippet.liveBroadcastContent;
-
-              if (broadcastStatus !== "live") {
-                completedFallback = {
-                  videoId: videoId,
-                  title: title,
-                  type: "completed",
-                  startTime: new Date(video.snippet.publishedAt),
-                };
-                console.log(`[YouTube API] ℹ Using archive fallback: ${videoId}`);
-                break;
-              }
-            }
-
-            if (completedFallback) {
-              streamInfo = completedFallback;
-            }
+          if (completedFallback) {
+            streamInfo = completedFallback;
           }
         }
       }
     }
   }
 } catch (e) {
-  console.error(`[YouTube API] Error:`, e);
+  console.error(`[YouTube API] FATAL ERROR:`, e);
 }
 
-console.log(`\n[YouTube API] ========== FINAL RESULT ==========`);
-console.log(`[YouTube API] Type: ${streamInfo?.type}`);
-console.log(`[YouTube API] VideoID: ${streamInfo?.videoId}`);
-console.log(`[YouTube API] Title: ${streamInfo?.title}`);
-console.log(`[YouTube API] =========================================\n`);
+console.log(`\n[YouTube API] ═══════════════════════════════════════`);
+console.log(`[YouTube API] FINAL DECISION`);
+console.log(`[YouTube API] ═══════════════════════════════════════`);
+console.log(`[YouTube API] Type: ${streamInfo?.type || "NONE"}`);
+console.log(`[YouTube API] VideoID: ${streamInfo?.videoId || "NONE"}`);
+console.log(`[YouTube API] Title: ${streamInfo?.title || "NONE"}`);
+console.log(`[YouTube API] ═══════════════════════════════════════\n`);
 
 const isLive = streamInfo?.type === "live";
 const isUpcoming = streamInfo?.type === "upcoming";
