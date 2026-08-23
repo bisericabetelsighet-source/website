@@ -4,6 +4,136 @@ import Breadcrumbs from "../components/Breadcrumbs.astro";
 
 const CHANNEL_ID = "UCMN5bRpid3A09cIrkz97H2A";
 const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
-const API_KEY = "AIzaSyAK2dJTco8GV78YfXpIot5W1Dpu6loH5ho";
+const API_KEY = import.meta.env.YOUTUBE_API_KEY || "AIzaSyAK2dJTco8GV78YfXpIot5W1Dpu6loH5ho";
 
+async function ytSearch({ eventType } = {}) {
+  const params = new URLSearchParams({
+    part: "snippet",
+    channelId: CHANNEL_ID,
+    type: "video",
+    maxResults: "5",
+    order: "date",
+    key: API_KEY,
+  });
+  if (eventType) params.set("eventType", eventType);
+
+  const url = `https://www.googleapis.com/youtube/v3/search?${params.toString()}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+let chosen = null;
+
+// 1) current live
+const liveRes = await ytSearch({ eventType: "live" });
+if (liveRes && liveRes.items && liveRes.items.length > 0) {
+  chosen = { item: liveRes.items[0], status: "live" };
+}
+
+// 2) next scheduled
+if (!chosen) {
+  const upcomingRes = await ytSearch({ eventType: "upcoming" });
+  if (upcomingRes && upcomingRes.items && upcomingRes.items.length > 0) {
+    chosen = { item: upcomingRes.items[0], status: "upcoming" };
+  }
+}
+
+// 3) latest completed
+if (!chosen) {
+  const recentRes = await ytSearch();
+  if (recentRes && recentRes.items && recentRes.items.length > 0) {
+    const found = recentRes.items.find((it) => it.snippet && it.snippet.liveBroadcastContent === "none");
+    if (found) chosen = { item: found, status: "recorded" };
+  }
+}
+
+const videoId = chosen?.item?.id?.videoId;
+const snippet = chosen?.item?.snippet;
+const title = snippet?.title || "Transmisie video";
+const description = snippet?.description || "";
+const publishedAt = snippet?.publishedAt;
+const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default?.url;
+
+---
+
+<BaseLayout title="Live - BETEL" description="Urmărește transmisiunile noastre live și înregistrările recente" canonical="/live">
+  <div class="mx-auto max-w-4xl px-5 py-12">
+    <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Live" }]} />
+
+    <header class="mt-6">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Live</div>
+      <h1 class="mt-2 font-serif text-3xl font-semibold">Transmisiune live</h1>
+      <p class="text-muted-foreground mt-2">Urmărește transmisiunile noastre. Această pagină afișează prioritar transmisiunea curentă, apoi următoarea programată, apoi ultima înregistrare.</p>
+    </header>
+
+    <main class="mt-6" aria-labelledby="live-title">
+      {videoId ? (
+        <section aria-labelledby="live-title">
+          <div id="live-title" class="sr-only">{title}</div>
+
+          <div class="mt-4 grid gap-6 lg:grid-cols-3">
+            <div class="lg:col-span-2">
+              <div class="aspect-video w-full overflow-hidden rounded-md border border-border bg-black">
+                <iframe
+                  title={title}
+                  src={`https://www.youtube.com/embed/${videoId}?rel=0`}
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen
+                  class="h-full w-full"
+                />
+              </div>
+
+              <div class="mt-3 flex items-start gap-4">
+                <div class="flex-1">
+                  <h2 class="text-lg font-semibold">{title}</h2>
+                  <p class="text-sm text-muted-foreground mt-1">{publishedAt ? new Date(publishedAt).toLocaleString("ro-RO") : ""}</p>
+                  <p class="mt-3 text-sm whitespace-pre-line text-muted-foreground">{description}</p>
+                </div>
+                <div class="w-36 shrink-0">
+                  {thumbnail ? (
+                    <img src={thumbnail} alt="Thumbnail" class="rounded-md object-cover" width="320" height="180" />
+                  ) : null}
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <a href={`https://www.youtube.com/watch?v=${videoId}`} class="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">Vizualizează pe YouTube</a>
+                <a href={CHANNEL_URL} class="ml-3 text-sm text-muted-foreground hover:underline">Canalul nostru pe YouTube</a>
+              </div>
+            </div>
+
+            <aside class="lg:col-span-1">
+              <div class="rounded-md border border-border p-4">
+                <div class="text-xs font-semibold uppercase text-muted-foreground">Stare</div>
+                <div class="mt-2">
+                  {chosen.status === "live" ? (
+                    <span class="inline-flex items-center gap-2 text-sm text-red-600 font-medium">LIVE</span>
+                  ) : chosen.status === "upcoming" ? (
+                    <span class="inline-flex items-center gap-2 text-sm text-foreground">Programată</span>
+                  ) : (
+                    <span class="inline-flex items-center gap-2 text-sm text-muted-foreground">Înregistrare</span>
+                  )}
+                </div>
+                <div class="mt-4">
+                  <h3 class="text-sm font-medium">Despre</h3>
+                  <p class="text-sm text-muted-foreground mt-1">Transmisiunile sunt preluate de pe canalul nostru YouTube. Dacă nu există transmisii active sau programate, afișăm ultima înregistrare publicată.</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      ) : (
+        <section class="mt-6 rounded-md border border-border p-6 text-center">
+          <p class="text-muted-foreground">Nu am găsit nici o transmisie sau înregistrare publică pentru canalul nostru în acest moment.</p>
+          <p class="mt-3"><a href={CHANNEL_URL} class="text-primary hover:underline">Vezi canalul pe YouTube</a></p>
+        </section>
+      )}
+    </main>
+  </div>
 </BaseLayout>
