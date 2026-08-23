@@ -4,144 +4,144 @@ import Breadcrumbs from "../components/Breadcrumbs.astro";
 
 const CHANNEL_ID = "UCMN5bRpid3A09cIrkz97H2A";
 const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
+const API_KEY = "AIzaSyAK2dJTco8GV78YfXpIot5W1Dpu6loH5ho";
 
-/*
-  Live & upcoming detection strategy (server-side):
-  1. Check if channel is currently LIVE (redirect check)
-  2. If not live, fetch page and look for latest stream (live or scheduled)
-  3. Embed the specific video ID found (not channel embed)
-*/
-
-interface LiveStatus {
-  isLive: boolean;
-  isUpcoming: boolean;
-  hasContent: boolean;
-  videoId?: string;
+interface VideoInfo {
+  videoId: string;
+  title: string;
+  type: "live" | "upcoming" | "completed";
   startTime?: Date;
+  scheduledStartTime?: Date;
 }
 
-let liveStatus: LiveStatus = {
-  isLive: false,
-  isUpcoming: false,
-  hasContent: false,
-};
+let streamInfo: VideoInfo | null = null;
 
 try {
-  // Step 1: Check for active live via redirect
-  console.log(`[Live Detection] Checking ${CHANNEL_ID} for active streams...`);
-  
-  const redirectRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
-    method: "GET",
-    redirect: "manual",
-    headers: {
-      "user-agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    },
-  });
+  console.log(`[YouTube API] Fetching live events for channel ${CHANNEL_ID}...`);
 
-  console.log(`[Live Detection] Redirect check status: ${redirectRes.status}`);
+  // Step 1: Search for live broadcasts on the channel
+  const searchRes = await fetch(
+    `https://www.googleapis.com/youtube/v3/search?` +
+    `part=snippet&` +
+    `channelId=${CHANNEL_ID}&` +
+    `type=video&` +
+    `eventType=live&` +
+    `maxResults=1&` +
+    `key=${API_KEY}`,
+    { method: "GET" }
+  );
 
-  // Check if there's a redirect (means currently live)
-  if ((redirectRes.status === 301 || redirectRes.status === 302) && redirectRes.headers) {
-    const location = redirectRes.headers.get("location") || "";
-    console.log(`[Live Detection] Redirect location: ${location}`);
-    
-    if (location.includes("/watch?v=")) {
-      liveStatus.isLive = true;
-      liveStatus.hasContent = true;
-      const match = location.match(/v=([A-Za-z0-9_-]{11})/);
-      if (match) {
-        liveStatus.videoId = match[1];
-        console.log(`[Live Detection] ✓ LIVE detected. Video ID: ${liveStatus.videoId}`);
+  if (searchRes.ok) {
+    const searchData = await searchRes.json();
+    if (searchData.items && searchData.items.length > 0) {
+      const liveVideo = searchData.items[0];
+      const videoId = liveVideo.id.videoId;
+      console.log(`[YouTube API] ✓ LIVE stream found: ${videoId}`);
+
+      // Get full video details including liveBroadcastContent status
+      const videoRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?` +
+        `part=snippet,liveStreamingDetails&` +
+        `id=${videoId}&` +
+        `key=${API_KEY}`,
+        { method: "GET" }
+      );
+
+      if (videoRes.ok) {
+        const videoData = await videoRes.json();
+        if (videoData.items && videoData.items.length > 0) {
+          const video = videoData.items[0];
+          const liveDetails = video.liveStreamingDetails || {};
+
+          // Check the actual broadcast status
+          if (video.snippet.liveBroadcastContent === "live") {
+            streamInfo = {
+              videoId: videoId,
+              title: video.snippet.title,
+              type: "live",
+            };
+            console.log(`[YouTube API] Status: LIVE`);
+          } else if (video.snippet.liveBroadcastContent === "upcoming") {
+            streamInfo = {
+              videoId: videoId,
+              title: video.snippet.title,
+              type: "upcoming",
+              scheduledStartTime: liveDetails.scheduledStartTime
+                ? new Date(liveDetails.scheduledStartTime)
+                : undefined,
+            };
+            console.log(`[YouTube API] Status: UPCOMING - ${streamInfo.scheduledStartTime?.toISOString()}`);
+          }
+        }
       }
+    } else {
+      console.log(`[YouTube API] No live events found`);
     }
   }
 
-  // Step 2: If not live, fetch page to check for upcoming or get latest stream
-  if (!liveStatus.isLive) {
-    console.log(`[Live Detection] No live redirect. Fetching page for upcoming/archived streams...`);
-    
-    try {
-      const pageRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
-        method: "GET",
-        redirect: "follow",
-        headers: {
-          "user-agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        },
-      });
+  // Step 2: If no live/upcoming, search for completed streams or recent videos
+  if (!streamInfo) {
+    console.log(`[YouTube API] Searching for completed streams...`);
 
-      if (pageRes.ok) {
-        const html = await pageRes.text();
-        console.log(`[Live Detection] Page fetched. Length: ${html.length} chars`);
+    const upcomingRes = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?` +
+      `part=snippet&` +
+      `channelId=${CHANNEL_ID}&` +
+      `type=video&` +
+      `eventType=completed&` +
+      `order=date&` +
+      `maxResults=5&` +
+      `key=${API_KEY}`,
+      { method: "GET" }
+    );
 
-        // Extract all video IDs
-        const videoMatches = Array.from(html.matchAll(/watch\?v=([A-Za-z0-9_-]{11})/g));
-        console.log(`[Live Detection] Found ${videoMatches.length} video references`);
+    if (upcomingRes.ok) {
+      const upcomingData = await upcomingRes.json();
+      if (upcomingData.items && upcomingData.items.length > 0) {
+        // Get full details for the first completed stream
+        const completedVideo = upcomingData.items[0];
+        const videoId = completedVideo.id.videoId;
 
-        // Check for upcoming indicators (these are high priority)
-        if (/"isUpcoming"\s*:\s*true/.test(html) || /"liveStatus"\s*:\s*"UPCOMING"/.test(html)) {
-          console.log(`[Live Detection] ✓ UPCOMING stream detected`);
-          liveStatus.isUpcoming = true;
-          liveStatus.hasContent = true;
+        const videoRes = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?` +
+          `part=snippet,contentDetails&` +
+          `id=${videoId}&` +
+          `key=${API_KEY}`,
+          { method: "GET" }
+        );
 
-          // Extract the upcoming video ID
-          if (videoMatches.length > 0) {
-            liveStatus.videoId = videoMatches[0][1];
-            console.log(`[Live Detection] Upcoming video ID: ${liveStatus.videoId}`);
+        if (videoRes.ok) {
+          const videoData = await videoRes.json();
+          if (videoData.items && videoData.items.length > 0) {
+            const video = videoData.items[0];
+
+            streamInfo = {
+              videoId: videoId,
+              title: video.snippet.title,
+              type: "completed",
+              startTime: new Date(video.snippet.publishedAt),
+            };
+            console.log(`[YouTube API] ✓ Found completed stream: ${videoId}`);
           }
-
-          // Try to extract scheduled start time
-          let timeMatch = html.match(/"startTimestamp"\s*:\s*"([^"]+)"/);
-          if (!timeMatch) timeMatch = html.match(/"scheduledStartTime"\s*:\s*"([^"]+)"/);
-          if (!timeMatch) timeMatch = html.match(/"startTime"\s*:\s*(\d{10,})/);
-
-          if (timeMatch && timeMatch[1]) {
-            const timeStr = timeMatch[1];
-            const parsed = timeStr.match(/^\d{10,}$/)
-              ? new Date(parseInt(timeStr, 10) * 1000)
-              : new Date(timeStr);
-
-            if (!Number.isNaN(parsed.getTime())) {
-              liveStatus.startTime = parsed;
-              console.log(`[Live Detection] Start time: ${parsed.toISOString()}`);
-            }
-          }
-        } else if (videoMatches.length > 0) {
-          // No upcoming flag, but we found videos - use the first one (latest stream)
-          console.log(`[Live Detection] ✓ No upcoming, but found stream content`);
-          liveStatus.hasContent = true;
-          liveStatus.videoId = videoMatches[0][1];
-          console.log(`[Live Detection] Using latest stream video ID: ${liveStatus.videoId}`);
-        } else {
-          console.log(`[Live Detection] No streams found on channel`);
         }
-      } else {
-        console.warn(`[Live Detection] Page fetch returned status: ${pageRes.status}`);
       }
-    } catch (e) {
-      console.warn(`[Live Detection] Failed to fetch channel live page:`, e);
     }
   }
 } catch (e) {
-  console.warn(`[Live Detection] Detection failed:`, e);
+  console.error(`[YouTube API] Error:`, e);
 }
 
-console.log(`[Live Detection] Final status:`, {
-  isLive: liveStatus.isLive,
-  isUpcoming: liveStatus.isUpcoming,
-  hasContent: liveStatus.hasContent,
-  videoId: liveStatus.videoId,
+console.log(`[YouTube API] Final result:`, {
+  type: streamInfo?.type,
+  videoId: streamInfo?.videoId,
+  title: streamInfo?.title,
 });
 
-const { isLive, isUpcoming, hasContent, videoId } = liveStatus;
-
-// Build embed URL from the detected video ID, or fallback to channel
-const embedUrl = videoId
-  ? `https://www.youtube.com/embed/${videoId}?autoplay=1`
-  : `https://www.youtube.com/embed/live/${CHANNEL_ID}?autoplay=1`;
-
-console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
+const isLive = streamInfo?.type === "live";
+const isUpcoming = streamInfo?.type === "upcoming";
+const isCompleted = streamInfo?.type === "completed";
+const videoId = streamInfo?.videoId || "";
+const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : "";
 ---
 
 <BaseLayout title="LIVE - BETEL" description="Transmisiuni LIVE de la BETEL" canonical="/live">
@@ -179,7 +179,7 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
             <div style="position:relative;padding-top:56.25%">
               <iframe
                 src={embedUrl}
-                title="Betel - transmisiune live"
+                title={`Betel - ${streamInfo?.title || "transmisiune live"}`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen
                 loading="lazy"
@@ -217,7 +217,7 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
             <div style="position:relative;padding-top:56.25%">
               <iframe
                 src={embedUrl}
-                title="Betel - transmisiune programată"
+                title={`Betel - ${streamInfo?.title || "transmisiune programată"}`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen
                 loading="lazy"
@@ -226,10 +226,10 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
             </div>
           </div>
 
-          {liveStatus.startTime ? (
+          {streamInfo?.scheduledStartTime ? (
             <p class="text-sm text-muted-foreground">
-              Programat pentru: <time datetime={liveStatus.startTime.toISOString()}>
-                {liveStatus.startTime.toLocaleString("ro-RO", { dateStyle: "full", timeStyle: "short" })}
+              Programat pentru: <time datetime={streamInfo.scheduledStartTime.toISOString()}>
+                {streamInfo.scheduledStartTime.toLocaleString("ro-RO", { dateStyle: "full", timeStyle: "short" })}
               </time>
             </p>
           ) : (
@@ -240,7 +240,7 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
             Dacă playerul nu afișează încă transmisiunea, încercați <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a>.
           </p>
         </section>
-      ) : hasContent ? (
+      ) : isCompleted ? (
         <section aria-labelledby="archive-heading" class="space-y-4">
           <div class="flex items-center gap-3">
             <span class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-2 py-1 text-sm font-semibold text-white">
@@ -265,7 +265,7 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
             <div style="position:relative;padding-top:56.25%">
               <iframe
                 src={embedUrl}
-                title="Betel - transmisiune live din arhivă"
+                title={`Betel - ${streamInfo?.title || "transmisiune live din arhivă"}`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen
                 loading="lazy"
@@ -274,8 +274,18 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
             </div>
           </div>
 
+          {streamInfo?.startTime ? (
+            <p class="text-sm text-muted-foreground">
+              Transmisă pe: <time datetime={streamInfo.startTime.toISOString()}>
+                {streamInfo.startTime.toLocaleString("ro-RO", { dateStyle: "full", timeStyle: "short" })}
+              </time>
+            </p>
+          ) : (
+            <p class="text-sm text-muted-foreground">Vizionați transmisiunile noastre live din arhivă.</p>
+          )}
+
           <p class="text-sm text-muted-foreground">
-            Vizionați transmisiunile noastre live din arhivă. Urmăriți <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a> pentru programări de live.
+            Urmăriți <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a> pentru următoarele programe de live.
           </p>
         </section>
       ) : (
@@ -285,7 +295,7 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
           <div class="flex flex-col gap-4 md:flex-row md:items-center">
             <div class="flex-1 rounded-md border bg-card p-4">
               <p class="text-muted-foreground">
-                În prezent nu avem o transmisiune live activă. Când canalul va transmite în direct sau va programa o transmisiune, playerul va apărea aici automat.
+                În prezent nu avem o transmisiune live activă sau programată. Când canalul va transmite în direct sau va programa o transmisiune, playerul va apărea aici automat.
               </p>
               <p class="mt-3 text-sm">
                 Urmăriți canalul nostru pentru notificări:
@@ -319,7 +329,7 @@ console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
           </div>
 
           <p class="text-xs text-muted-foreground">
-            Detecția LIVE se face la încărcarea paginii. Dacă credeți că e live dar playerul nu apare, încercați reîncărcarea paginii.
+            Detecția LIVE se face la încărcarea paginii cu datele din YouTube. Dacă credeți că e live dar playerul nu apare, încercați reîncărcarea paginii.
           </p>
         </section>
       )}
