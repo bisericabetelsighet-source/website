@@ -7,260 +7,107 @@ const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
 
 /*
   Live & upcoming detection strategy (server-side):
-  1. Check if currently LIVE by looking for redirect or live-specific flags.
-  2. If not live, search for the closest SCHEDULED upcoming stream.
-  3. If no scheduled stream, fall back to the latest COMPLETED live stream.
-  4. Exclude published videos (regular uploads) and playlists.
+  1. Check if channel is currently LIVE (redirect check)
+  2. If not live, check for upcoming scheduled stream
+  3. If not upcoming, show fallback message or latest VOD
   
-  This uses best-effort server-side HTML parsing with zero client JS and no external API keys.
+  Uses best-effort server-side detection with zero external API keys.
+  YouTube's /channel/{id}/live will either:
+  - Redirect (301/302) to /watch?v=LIVE_VIDEO_ID when actively streaming
+  - Return 200 with the channel's live page (shows scheduled or no stream)
 */
 
-interface VideoInfo {
-  videoId: string;
-  type: "live" | "upcoming" | "completed";
+interface LiveStatus {
+  isLive: boolean;
+  isUpcoming: boolean;
+  videoId?: string;
   startTime?: Date;
 }
 
-let currentState: VideoInfo | null = null;
-
-/**
- * Extract timestamp from YouTube's inline JSON
- */
-function extractTimestamp(html: string, keys: string[]): Date | null {
-  for (const key of keys) {
-    // Try quoted string format: "key":"2025-01-15T19:30:00Z"
-    let match = html.match(new RegExp(`"${key}"\\s*:\\s*"([^"]+)"`));
-    if (match && match[1]) {
-      const date = new Date(match[1]);
-      if (!Number.isNaN(date.getTime())) return date;
-    }
-
-    // Try numeric format: "key":1234567890
-    match = html.match(new RegExp(`"${key}"\\s*:\\s*(\\d{10,})`));
-    if (match && match[1]) {
-      const date = new Date(parseInt(match[1], 10) * 1000);
-      if (!Number.isNaN(date.getTime())) return date;
-    }
-  }
-  return null;
-}
-
-/**
- * Extract all video metadata blocks from HTML
- * Returns array of {videoId, htmlBlock} for contextual analysis
- */
-function extractVideoBlocks(html: string): Array<{ videoId: string; block: string }> {
-  const blocks: Array<{ videoId: string; block: string }> = [];
-  const seen = new Set<string>();
-
-  // Find all video IDs with their surrounding context
-  const regex = /watch\?v=([A-Za-z0-9_-]{11})/g;
-  let match;
-
-  while ((match = regex.exec(html)) !== null) {
-    const videoId = match[1];
-    if (seen.has(videoId)) continue;
-    seen.add(videoId);
-
-    // Extract a large context window around the video ID
-    const idIndex = match.index;
-    const contextStart = Math.max(0, idIndex - 3000);
-    const contextEnd = Math.min(html.length, idIndex + 3000);
-    const block = html.substring(contextStart, contextEnd);
-
-    blocks.push({ videoId, block });
-  }
-
-  return blocks;
-}
-
-/**
- * Check if a block contains live indicators
- */
-function isLiveVideo(block: string): boolean {
-  return (
-    /"isLive"\s*:\s*true/.test(block) ||
-    /"is_live"\s*:\s*true/.test(block) ||
-    /"isCurrentlyLive"\s*:\s*true/.test(block) ||
-    /"liveStatus"\s*:\s*"LIVE"/.test(block)
-  );
-}
-
-/**
- * Check if a block contains upcoming indicators
- */
-function isUpcomingVideo(block: string): boolean {
-  return (
-    /"isUpcoming"\s*:\s*true/.test(block) ||
-    /"is_upcoming"\s*:\s*true/.test(block) ||
-    /"liveStatus"\s*:\s*"UPCOMING"/.test(block)
-  );
-}
-
-/**
- * Check if a block indicates this is a regular published video (not a stream)
- */
-function isRegularPublishedVideo(block: string): boolean {
-  // If it explicitly says it's upcoming or live, it's NOT a regular video
-  if (isUpcomingVideo(block) || isLiveVideo(block)) {
-    return false;
-  }
-
-  // Check for indicators that this is a regular published video
-  return (
-    /"videoType"\s*:\s*"UPLOADED_VIDEO"/.test(block) ||
-    /"is_upload"/.test(block)
-  );
-}
-
-/**
- * Check if a block is from a playlist or collection
- */
-function isPlaylist(block: string): boolean {
-  return (
-    /"isPlaylist"\s*:\s*true/.test(block) ||
-    /"playlistId"/.test(block) ||
-    /"PLAYLIST"/.test(block)
-  );
-}
+let liveStatus: LiveStatus = {
+  isLive: false,
+  isUpcoming: false,
+};
 
 try {
-  // Step 1: Check for currently active live stream via redirect
-  // This is the most reliable indicator - YouTube only redirects when there's an active live
-  let liveVideoId: string | null = null;
+  // Fetch the channel live page with redirect:manual to detect current state
+  const res = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
+    method: "GET",
+    redirect: "manual",
+    headers: {
+      "user-agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    },
+  });
 
-  try {
-    const liveRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
-      method: "GET",
-      redirect: "manual",
-      headers: {
-        "user-agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-    });
-
-    // YouTube redirects to /watch?v=VIDEO_ID when currently live
-    if ((liveRes.status === 301 || liveRes.status === 302) && liveRes.headers) {
-      const locationHeader = liveRes.headers.get("location") ?? "";
-      if (locationHeader) {
-        try {
-          const absolute = locationHeader.startsWith("http")
-            ? locationHeader
-            : `https://www.youtube.com${locationHeader}`;
-          const url = new URL(absolute);
-          liveVideoId = url.searchParams.get("v");
-
-          if (liveVideoId) {
-            currentState = {
-              videoId: liveVideoId,
-              type: "live",
-            };
-          }
-        } catch {}
+  // Check if there's a redirect (means currently live)
+  if ((res.status === 301 || res.status === 302) && res.headers) {
+    const location = res.headers.get("location") || "";
+    if (location.includes("/watch?v=")) {
+      liveStatus.isLive = true;
+      // Extract video ID from redirect location
+      const match = location.match(/v=([A-Za-z0-9_-]{11})/);
+      if (match) {
+        liveStatus.videoId = match[1];
       }
     }
-  } catch (e) {
-    console.warn("YouTube live redirect check failed:", e);
   }
 
-  // Step 2 & 3: If not live, fetch channel live page and parse for upcoming/completed
-  if (!currentState) {
+  // If not live via redirect, fetch the page to check for upcoming stream
+  if (!liveStatus.isLive) {
     try {
-      const channelRes = await fetch(
-        `https://www.youtube.com/channel/${CHANNEL_ID}/live`,
-        {
-          method: "GET",
-          redirect: "follow",
-          headers: {
-            "user-agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          },
-        }
-      );
+      const pageRes = await fetch(`https://www.youtube.com/channel/${CHANNEL_ID}/live`, {
+        method: "GET",
+        redirect: "follow",
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+      });
 
-      if (channelRes.ok) {
-        const html = await channelRes.text();
-        const videoBlocks = extractVideoBlocks(html);
+      if (pageRes.ok) {
+        const html = await pageRes.text();
 
-        let upcomingCandidate: VideoInfo | null = null;
-        let completedCandidate: VideoInfo | null = null;
+        // Check for upcoming indicators in the page
+        if (/"isUpcoming"\s*:\s*true/.test(html) || /"liveStatus"\s*:\s*"UPCOMING"/.test(html)) {
+          liveStatus.isUpcoming = true;
 
-        // Analyze each video block
-        for (const { videoId, block } of videoBlocks) {
-          // Skip playlists
-          if (isPlaylist(block)) {
-            continue;
+          // Try to extract the upcoming video ID
+          const vidMatch = html.match(/watch\?v=([A-Za-z0-9_-]{11})/);
+          if (vidMatch) {
+            liveStatus.videoId = vidMatch[1];
           }
 
-          // Skip regular published videos
-          if (isRegularPublishedVideo(block)) {
-            continue;
-          }
+          // Try to extract scheduled start time
+          let timeMatch = html.match(/"startTimestamp"\s*:\s*"([^"]+)"/);
+          if (!timeMatch) timeMatch = html.match(/"scheduledStartTime"\s*:\s*"([^"]+)"/);
+          if (!timeMatch) timeMatch = html.match(/"startTime"\s*:\s*(\d{10,})/);
 
-          // Check for live video (shouldn't happen here if redirect worked, but be safe)
-          if (isLiveVideo(block)) {
-            currentState = {
-              videoId,
-              type: "live",
-            };
-            break;
-          }
+          if (timeMatch && timeMatch[1]) {
+            const timeStr = timeMatch[1];
+            // Handle both ISO format and unix timestamp
+            const parsed = timeStr.match(/^\d{10,}$/)
+              ? new Date(parseInt(timeStr, 10) * 1000)
+              : new Date(timeStr);
 
-          // Check for upcoming scheduled stream - take the first one
-          if (isUpcomingVideo(block) && !upcomingCandidate) {
-            const startTime = extractTimestamp(block, [
-              "startTimestamp",
-              "startTime",
-              "start_time",
-              "scheduledStartTime",
-              "upcomingEventData",
-            ]);
-            upcomingCandidate = {
-              videoId,
-              type: "upcoming",
-              startTime: startTime || undefined,
-            };
-            // Keep looking in case there's a live status we missed
+            if (!Number.isNaN(parsed.getTime())) {
+              liveStatus.startTime = parsed;
+            }
           }
-
-          // If no flags match, treat as completed/VOD (most recent first)
-          if (!upcomingCandidate && !completedCandidate) {
-            const publishTime = extractTimestamp(block, [
-              "uploadDate",
-              "publish_date",
-              "publishedAt",
-              "creationTime",
-            ]);
-            completedCandidate = {
-              videoId,
-              type: "completed",
-              startTime: publishTime || undefined,
-            };
-          }
-        }
-
-        // Prefer upcoming over completed
-        if (upcomingCandidate && !currentState) {
-          currentState = upcomingCandidate;
-        } else if (completedCandidate && !currentState) {
-          currentState = completedCandidate;
         }
       }
     } catch (e) {
-      console.warn("YouTube channel page parsing failed:", e);
+      console.warn("Failed to fetch channel live page:", e);
     }
   }
 } catch (e) {
   console.warn("YouTube detection failed:", e);
 }
 
-const isLive = currentState?.type === "live";
-const isUpcoming = currentState?.type === "upcoming";
-const isCompleted = currentState?.type === "completed";
-const embedUrl = currentState
-  ? `https://www.youtube.com/embed/${currentState.videoId}?start=0`
-  : "";
-const startTime = currentState?.startTime || null;
+const { isLive, isUpcoming, videoId, startTime } = liveStatus;
+
+// Use channel live URL directly for embeds - YouTube handles it properly
+const embedUrl = `https://www.youtube.com/embed/live/${CHANNEL_ID}?autoplay=1`;
 ---
 
 <BaseLayout title="LIVE - BETEL" description="Transmisiuni LIVE de la BETEL" canonical="/live">
@@ -359,54 +206,6 @@ const startTime = currentState?.startTime || null;
             Dacă playerul nu afișează încă transmisiunea, încercați <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a>.
           </p>
         </section>
-      ) : isCompleted ? (
-        <section aria-labelledby="completed-heading" class="space-y-4">
-          <div class="flex items-center gap-3">
-            <span class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-2 py-1 text-sm font-semibold text-white">
-              <svg
-                aria-hidden="true"
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                class="shrink-0"
-              >
-                <path d="M9 12l2 2 4-4"></path>
-              </svg>
-              Arhivă
-            </span>
-            <a href={CHANNEL_URL} class="text-sm underline">Vezi mai multe pe YouTube</a>
-          </div>
-
-          <h2 id="completed-heading" class="text-xl font-semibold">Ultima transmisiune live</h2>
-
-          <div class="w-full overflow-hidden rounded-md bg-black" role="region" aria-label="Transmisiune live din arhivă">
-            <div style="position:relative;padding-top:56.25%">
-              <iframe
-                src={embedUrl}
-                title="Betel - transmisiune live din arhivă"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-                loading="lazy"
-                style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
-              />
-            </div>
-          </div>
-
-          {startTime ? (
-            <p class="text-sm text-muted-foreground">
-              Transmisă pe: <time datetime={startTime.toISOString()}>
-                {startTime.toLocaleString("ro-RO", { dateStyle: "full", timeStyle: "short" })}
-              </time>
-            </p>
-          ) : (
-            <p class="text-sm text-muted-foreground">Vizionați transmisiunile noastre live din arhivă.</p>
-          )}
-
-          <p class="text-sm text-muted-foreground">
-            Urmăriți <a href={CHANNEL_URL} class="underline">canalul nostru YouTube</a> pentru următoarele programe de live.
-          </p>
-        </section>
       ) : (
         <section aria-labelledby="none-heading" class="space-y-6">
           <h2 id="none-heading" class="text-xl font-semibold">Momentan nu este niciun LIVE</h2>
@@ -414,7 +213,7 @@ const startTime = currentState?.startTime || null;
           <div class="flex flex-col gap-4 md:flex-row md:items-center">
             <div class="flex-1 rounded-md border bg-card p-4">
               <p class="text-muted-foreground">
-                În prezent nu avem o transmisiune live activă, programată sau în arhivă. Când canalul va transmite în direct sau va programa o transmisiune, playerul va apărea aici automat.
+                În prezent nu avem o transmisiune live activă. Când canalul va transmite în direct sau va programa o transmisiune, playerul va apărea aici automat.
               </p>
               <p class="mt-3 text-sm">
                 Urmăriți canalul nostru pentru notificări:
@@ -439,7 +238,7 @@ const startTime = currentState?.startTime || null;
                   href={CHANNEL_URL + "/?sub_confirmation=1"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="mt3 inline-block w-full rounded-md border px-3 py-2 text-center text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  class="mt-3 inline-block w-full rounded-md border px-3 py-2 text-center text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   Abonează-te
                 </a>
@@ -448,7 +247,7 @@ const startTime = currentState?.startTime || null;
           </div>
 
           <p class="text-xs text-muted-foreground">
-            Detecția LIVE se face la încărcarea paginii. Dacă credeți că e live, programat sau în arhivă dar playerul nu apare, încercați reîncărcarea paginii sau verificați <a href={CHANNEL_URL} class="underline">direct canalul YouTube</a>.
+            Detecția LIVE se face la încărcarea paginii. Dacă credeți că e live dar playerul nu apare, încercați reîncărcarea paginii.
           </p>
         </section>
       )}
