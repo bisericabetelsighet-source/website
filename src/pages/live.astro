@@ -9,7 +9,7 @@ const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
   Live & upcoming detection strategy (server-side):
   1. Check if channel is currently LIVE (redirect check)
   2. If not live, fetch page and look for latest stream (live or scheduled)
-  3. Use YouTube's channel live embed which always shows correct content
+  3. Embed the specific video ID found (not channel embed)
 */
 
 interface LiveStatus {
@@ -134,10 +134,14 @@ console.log(`[Live Detection] Final status:`, {
   videoId: liveStatus.videoId,
 });
 
-const { isLive, isUpcoming, hasContent } = liveStatus;
+const { isLive, isUpcoming, hasContent, videoId } = liveStatus;
 
-// Use channel live URL - YouTube's embed handles routing automatically
-const embedUrl = `https://www.youtube.com/embed/live/${CHANNEL_ID}?autoplay=1`;
+// Build embed URL from the detected video ID, or fallback to channel
+const embedUrl = videoId
+  ? `https://www.youtube.com/embed/${videoId}?autoplay=1`
+  : `https://www.youtube.com/embed/live/${CHANNEL_ID}?autoplay=1`;
+
+console.log(`[Live Detection] Using embed URL: ${embedUrl}`);
 ---
 
 <BaseLayout title="LIVE - BETEL" description="Transmisiuni LIVE de la BETEL" canonical="/live">
