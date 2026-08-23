@@ -51,6 +51,11 @@ try {
         console.log(`[YouTube API] Retrieved details for ${videoData.items?.length || 0} videos`);
 
         if (videoData.items) {
+          let upcomingFallback: VideoInfo | null = null;
+          let completedFallback: VideoInfo | null = null;
+
+          // PASS 1: Look for CURRENTLY LIVE streams
+          console.log(`[YouTube API] PASS 1: Looking for LIVE streams...`);
           for (let i = 0; i < videoData.items.length; i++) {
             const video = videoData.items[i];
             const videoId = video.id;
@@ -58,16 +63,10 @@ try {
             const liveDetails = video.liveStreamingDetails || {};
             const broadcastStatus = video.snippet.liveBroadcastContent;
 
-            console.log(`\n[YouTube API] [${i}] Video: ${title}`);
-            console.log(`[YouTube API] [${i}] ID: ${videoId}`);
-            console.log(`[YouTube API] [${i}] liveBroadcastContent: ${broadcastStatus}`);
-            console.log(`[YouTube API] [${i}] actualStartTime: ${liveDetails.actualStartTime || "null"}`);
-            console.log(`[YouTube API] [${i}] actualEndTime: ${liveDetails.actualEndTime || "null"}`);
-            console.log(`[YouTube API] [${i}] scheduledStartTime: ${liveDetails.scheduledStartTime || "null"}`);
-            console.log(`[YouTube API] [${i}] concurrentViewers: ${liveDetails.concurrentViewers || "null"}`);
+            console.log(`[YouTube API] [${i}] ${title}`);
+            console.log(`[YouTube API] [${i}]   Status: ${broadcastStatus} | Start: ${liveDetails.actualStartTime || "null"} | End: ${liveDetails.actualEndTime || "null"}`);
 
-            // PRIORITY 1: Currently LIVE
-            // Live means: liveBroadcastContent="live" AND has actualStartTime AND no actualEndTime
+            // Check if CURRENTLY LIVE: broadcastStatus="live" AND actualStartTime AND no actualEndTime
             if (
               broadcastStatus === "live" &&
               liveDetails.actualStartTime &&
@@ -78,37 +77,64 @@ try {
                 title: title,
                 type: "live",
               };
-              console.log(`[YouTube API] ✓✓✓ CURRENTLY LIVE: ${videoId}`);
+              console.log(`[YouTube API] ✓✓✓ FOUND LIVE: ${videoId}`);
               break;
             }
-            // PRIORITY 2: UPCOMING
-            // Upcoming means: liveBroadcastContent="upcoming" AND has scheduledStartTime
-            else if (
-              broadcastStatus === "upcoming" &&
-              liveDetails.scheduledStartTime
-            ) {
-              if (!streamInfo || streamInfo.type !== "live") {
-                streamInfo = {
+          }
+
+          // PASS 2: If no live found, look for UPCOMING
+          if (!streamInfo) {
+            console.log(`[YouTube API] PASS 2: No live found. Looking for UPCOMING streams...`);
+            for (let i = 0; i < videoData.items.length; i++) {
+              const video = videoData.items[i];
+              const videoId = video.id;
+              const title = video.snippet.title;
+              const liveDetails = video.liveStreamingDetails || {};
+              const broadcastStatus = video.snippet.liveBroadcastContent;
+
+              if (
+                broadcastStatus === "upcoming" &&
+                liveDetails.scheduledStartTime
+              ) {
+                upcomingFallback = {
                   videoId: videoId,
                   title: title,
                   type: "upcoming",
                   scheduledStartTime: new Date(liveDetails.scheduledStartTime),
                 };
-                console.log(`[YouTube API] ℹ UPCOMING STREAM: ${videoId}`);
+                console.log(`[YouTube API] ℹ FOUND UPCOMING: ${videoId}`);
+                break;
               }
             }
-            // PRIORITY 3: Use first non-live video as fallback (archive)
-            else if (!streamInfo && broadcastStatus !== "live") {
-              console.log(`[YouTube API] ℹ Using as fallback archive: ${videoId}`);
-              streamInfo = {
-                videoId: videoId,
-                title: title,
-                type: "completed",
-                startTime: new Date(video.snippet.publishedAt),
-              };
+
+            if (upcomingFallback) {
+              streamInfo = upcomingFallback;
             }
-            else {
-              console.log(`[YouTube API] [${i}] Skipping (status: ${broadcastStatus})`);
+          }
+
+          // PASS 3: If no live or upcoming, use first non-live video as archive fallback
+          if (!streamInfo) {
+            console.log(`[YouTube API] PASS 3: No live/upcoming found. Looking for archive fallback...`);
+            for (let i = 0; i < videoData.items.length; i++) {
+              const video = videoData.items[i];
+              const videoId = video.id;
+              const title = video.snippet.title;
+              const broadcastStatus = video.snippet.liveBroadcastContent;
+
+              if (broadcastStatus !== "live") {
+                completedFallback = {
+                  videoId: videoId,
+                  title: title,
+                  type: "completed",
+                  startTime: new Date(video.snippet.publishedAt),
+                };
+                console.log(`[YouTube API] ℹ Using archive fallback: ${videoId}`);
+                break;
+              }
+            }
+
+            if (completedFallback) {
+              streamInfo = completedFallback;
             }
           }
         }
