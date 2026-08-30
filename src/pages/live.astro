@@ -114,7 +114,7 @@ const API_KEY = import.meta.env.PUBLIC_YOUTUBE_API_KEY;
               <div class="aspect-video w-full overflow-hidden rounded-md border border-border bg-black">
                 <iframe
                   title="${title}"
-                  src="https://www.youtube.com/embed/${videoId}?rel=0"
+                  src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0"
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowfullscreen
@@ -143,7 +143,7 @@ const API_KEY = import.meta.env.PUBLIC_YOUTUBE_API_KEY;
                 <div class="mt-2">${statusBadge}</div>
                 <div class="mt-4">
                   <h3 class="text-sm font-medium">Despre</h3>
-                  <p class="text-sm text-muted-foreground mt-1">Transmisiunile sunt preluate de pe canalul nostru YouTube. Dacă nu există transmisii active sau programate în curând, afișăm ultima înregistrare publicată.</p>
+                  <p class="text-sm text-muted-foreground mt-1">Transmisiunile sunt preluate de pe canalul nostru YouTube. Dacă nu există transmisii active sau programate în curând, ultima transmisiune este afișată.</p>
                 </div>
               </div>
             </aside>
