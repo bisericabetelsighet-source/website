@@ -33,21 +33,30 @@ async function ytSearch({ eventType } = {}) {
 
 let chosen = null;
 
-// 1) Check if channel is currently live
+// 1) Priority 1: Check if channel is currently live
 const liveRes = await ytSearch({ eventType: "live" });
 if (liveRes && liveRes.items && liveRes.items.length > 0) {
   chosen = { item: liveRes.items[0], status: "live" };
 }
 
-// 2) Check for upcoming scheduled stream
+// 2) Priority 2: Check upcoming streams (ONLY if within 2 days / 48 hours)
 if (!chosen) {
   const upcomingRes = await ytSearch({ eventType: "upcoming" });
   if (upcomingRes && upcomingRes.items && upcomingRes.items.length > 0) {
-    chosen = { item: upcomingRes.items[0], status: "upcoming" };
+    const upcomingItem = upcomingRes.items[0];
+    const publishTime = new Date(upcomingItem.snippet.publishedAt).getTime();
+    const now = new Date().getTime();
+    
+    // Calculate difference in days (48 hours)
+    const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+    
+    if (publishTime - now <= twoDaysInMs) {
+      chosen = { item: upcomingItem, status: "upcoming" };
+    }
   }
 }
 
-// 3) Fallback to latest recorded stream or upload
+// 3) Priority 3: Fallback to the latest recorded stream or upload
 if (!chosen) {
   const recentRes = await ytSearch();
   if (recentRes && recentRes.items && recentRes.items.length > 0) {
@@ -71,7 +80,7 @@ const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default
     <header class="mt-6">
       <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Live</div>
       <h1 class="mt-2 font-serif text-3xl font-semibold">Transmisiune live</h1>
-      <p class="text-muted-foreground mt-2">Urmărește transmisiunile noastre. Această pagină afișează prioritar transmisiunea curentă, apoi următoarea programată, apoi ultima înregistrare.</p>
+      <p class="text-muted-foreground mt-2">Urmărește transmisiunile noastre. Această pagină afișează prioritar transmisiunea curentă, apoi următoarea programată (cu cel mult 2 zile înainte), apoi ultima înregistrare.</p>
     </header>
 
     <main class="mt-6" aria-labelledby="live-title">
@@ -125,7 +134,7 @@ const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default
                 </div>
                 <div class="mt-4">
                   <h3 class="text-sm font-medium">Despre</h3>
-                  <p class="text-sm text-muted-foreground mt-1">Transmisiunile sunt preluate de pe canalul nostru YouTube. Dacă nu există transmisii active sau programate, afișăm ultima înregistrare publicată.</p>
+                  <p class="text-sm text-muted-foreground mt-1">Transmisiunile sunt preluate de pe canalul nostru YouTube. Dacă nu există transmisii active sau programate în curând, afișăm ultima înregistrare publicată.</p>
                 </div>
               </div>
             </aside>
