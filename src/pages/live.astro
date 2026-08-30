@@ -1,18 +1,15 @@
 ---
+export const prerender = false;
+
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 
 const CHANNEL_ID = "UCLTRt-DfN6gpsAmS2fgZHEA";
 const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
-
-// Safely pull key from Vercel environment variables without leaking secrets in GitHub
-const API_KEY = import.meta.env.YOUTUBE_API_KEY;
+const API_KEY = import.meta.env.PUBLIC_YOUTUBE_API_KEY;
 
 async function ytSearch({ eventType } = {}) {
-  if (!API_KEY) {
-    console.error("YOUTUBE_API_KEY is missing from environment variables.");
-    return null;
-  }
+  if (!API_KEY) return null;
 
   const params = new URLSearchParams({
     part: "snippet",
@@ -36,13 +33,13 @@ async function ytSearch({ eventType } = {}) {
 
 let chosen = null;
 
-// 1) Current live stream
+// 1) Check if channel is currently live
 const liveRes = await ytSearch({ eventType: "live" });
 if (liveRes && liveRes.items && liveRes.items.length > 0) {
   chosen = { item: liveRes.items[0], status: "live" };
 }
 
-// 2) Next scheduled stream
+// 2) Check for upcoming scheduled stream
 if (!chosen) {
   const upcomingRes = await ytSearch({ eventType: "upcoming" });
   if (upcomingRes && upcomingRes.items && upcomingRes.items.length > 0) {
@@ -50,7 +47,7 @@ if (!chosen) {
   }
 }
 
-// 3) Latest completed stream/upload
+// 3) Fallback to latest recorded stream or upload
 if (!chosen) {
   const recentRes = await ytSearch();
   if (recentRes && recentRes.items && recentRes.items.length > 0) {
@@ -118,9 +115,9 @@ const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default
               <div class="rounded-md border border-border p-4">
                 <div class="text-xs font-semibold uppercase text-muted-foreground">Stare</div>
                 <div class="mt-2">
-                  {chosen.status === "live" ? (
+                  {chosen?.status === "live" ? (
                     <span class="inline-flex items-center gap-2 text-sm text-red-600 font-medium">● LIVE</span>
-                  ) : chosen.status === "upcoming" ? (
+                  ) : chosen?.status === "upcoming" ? (
                     <span class="inline-flex items-center gap-2 text-sm text-foreground">Programată</span>
                   ) : (
                     <span class="inline-flex items-center gap-2 text-sm text-muted-foreground">Înregistrare</span>
