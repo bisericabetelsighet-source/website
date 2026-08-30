@@ -2,11 +2,18 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 
-const CHANNEL_ID = "UCMN5bRpid3A09cIrkz97H2A";
+const CHANNEL_ID = "UCLTRt-DfN6gpsAmS2fgZHEA";
 const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
-const API_KEY = import.meta.env.YOUTUBE_API_KEY || "AIzaSyAK2dJTco8GV78YfXpIot5W1Dpu6loH5ho";
+
+// Safely pull key from Vercel environment variables without leaking secrets in GitHub
+const API_KEY = import.meta.env.YOUTUBE_API_KEY;
 
 async function ytSearch({ eventType } = {}) {
+  if (!API_KEY) {
+    console.error("YOUTUBE_API_KEY is missing from environment variables.");
+    return null;
+  }
+
   const params = new URLSearchParams({
     part: "snippet",
     channelId: CHANNEL_ID,
@@ -29,13 +36,13 @@ async function ytSearch({ eventType } = {}) {
 
 let chosen = null;
 
-// 1) current live
+// 1) Current live stream
 const liveRes = await ytSearch({ eventType: "live" });
 if (liveRes && liveRes.items && liveRes.items.length > 0) {
   chosen = { item: liveRes.items[0], status: "live" };
 }
 
-// 2) next scheduled
+// 2) Next scheduled stream
 if (!chosen) {
   const upcomingRes = await ytSearch({ eventType: "upcoming" });
   if (upcomingRes && upcomingRes.items && upcomingRes.items.length > 0) {
@@ -43,7 +50,7 @@ if (!chosen) {
   }
 }
 
-// 3) latest completed
+// 3) Latest completed stream/upload
 if (!chosen) {
   const recentRes = await ytSearch();
   if (recentRes && recentRes.items && recentRes.items.length > 0) {
@@ -58,7 +65,6 @@ const title = snippet?.title || "Transmisie video";
 const description = snippet?.description || "";
 const publishedAt = snippet?.publishedAt;
 const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default?.url;
-
 ---
 
 <BaseLayout title="Live - BETEL" description="Urmărește transmisiunile noastre live și înregistrările recente" canonical="/live">
@@ -103,8 +109,8 @@ const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default
               </div>
 
               <div class="mt-4">
-                <a href={`https://www.youtube.com/watch?v=${videoId}`} class="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">Vizualizează pe YouTube</a>
-                <a href={CHANNEL_URL} class="ml-3 text-sm text-muted-foreground hover:underline">Canalul nostru pe YouTube</a>
+                <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">Vizualizează pe YouTube</a>
+                <a href={CHANNEL_URL} target="_blank" rel="noopener noreferrer" class="ml-3 text-sm text-muted-foreground hover:underline">Canalul nostru pe YouTube</a>
               </div>
             </div>
 
@@ -113,7 +119,7 @@ const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default
                 <div class="text-xs font-semibold uppercase text-muted-foreground">Stare</div>
                 <div class="mt-2">
                   {chosen.status === "live" ? (
-                    <span class="inline-flex items-center gap-2 text-sm text-red-600 font-medium">LIVE</span>
+                    <span class="inline-flex items-center gap-2 text-sm text-red-600 font-medium">● LIVE</span>
                   ) : chosen.status === "upcoming" ? (
                     <span class="inline-flex items-center gap-2 text-sm text-foreground">Programată</span>
                   ) : (
@@ -131,7 +137,7 @@ const thumbnail = snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default
       ) : (
         <section class="mt-6 rounded-md border border-border p-6 text-center">
           <p class="text-muted-foreground">Nu am găsit nici o transmisie sau înregistrare publică pentru canalul nostru în acest moment.</p>
-          <p class="mt-3"><a href={CHANNEL_URL} class="text-primary hover:underline">Vezi canalul pe YouTube</a></p>
+          <p class="mt-3"><a href={CHANNEL_URL} target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Vezi canalul pe YouTube</a></p>
         </section>
       )}
     </main>
