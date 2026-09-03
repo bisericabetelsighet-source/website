@@ -2,9 +2,119 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 
+export const prerender = false; // needs to run per-request on Vercel (SSR) so "live now" / "within 2 days" stays accurate
+
 const CHANNEL_ID = "UCMN5bRpid3A09cIrkz97H2A";
 const CHANNEL_URL = `https://www.youtube.com/channel/${CHANNEL_ID}`;
-const API_KEY = import.meta.env.PUBLIC_YOUTUBE_API_KEY;
+
+// NOTE: no PUBLIC_ prefix — this key is now only ever used server-side and
+// is never sent to the browser. Set YOUTUBE_API_KEY in your Vercel project's
+// environment variables (not PUBLIC_YOUTUBE_API_KEY).
+const API_KEY = import.meta.env.YOUTUBE_API_KEY;
+
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+async function ytSearch(eventType) {
+  const params = new URLSearchParams({
+    part: "snippet",
+    channelId: CHANNEL_ID,
+    type: "video",
+    maxResults: "5",
+    order: "date",
+    key: API_KEY,
+  });
+  if (eventType) params.set("eventType", eventType);
+
+  try {
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+// search.list never returns liveStreamingDetails (scheduledStartTime,
+// actualStartTime, etc). That data only comes from videos.list. This is
+// the piece that was missing before — the code was checking
+// snippet.publishedAt, which is roughly when the broadcast was CREATED,
+// not when it's scheduled to start.
+async function ytVideosDetails(videoIds) {
+  if (!videoIds.length) return null;
+  const params = new URLSearchParams({
+    part: "liveStreamingDetails,snippet",
+    id: videoIds.join(","),
+    key: API_KEY,
+  });
+  try {
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params.toString()}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+let chosen = null;
+let fetchFailed = false;
+
+if (!API_KEY) {
+  fetchFailed = true;
+} else {
+  // 1) Priority 1: currently live
+  const liveRes = await ytSearch("live");
+  if (liveRes && liveRes.items && liveRes.items.length > 0) {
+    chosen = { item: liveRes.items[0], status: "live" };
+  }
+
+  // 2) Priority 2: upcoming, but only if the REAL scheduled start is within 2 days
+  if (!chosen) {
+    const upcomingRes = await ytSearch("upcoming");
+    if (upcomingRes && upcomingRes.items && upcomingRes.items.length > 0) {
+      const upcomingItem = upcomingRes.items[0];
+      const videoId = upcomingItem.id.videoId;
+
+      const detailsRes = await ytVideosDetails([videoId]);
+      const scheduledStartTime = detailsRes?.items?.[0]?.liveStreamingDetails?.scheduledStartTime;
+
+      if (scheduledStartTime) {
+        const startTime = new Date(scheduledStartTime).getTime();
+        const now = Date.now();
+        const diff = startTime - now;
+
+        // within the next 2 days (and not something that's somehow already "in the past" by more than 2 days)
+        if (diff <= TWO_DAYS_MS && diff > -TWO_DAYS_MS) {
+          chosen = { item: upcomingItem, status: "upcoming", scheduledStartTime };
+        }
+      }
+    }
+  }
+
+  // 3) Priority 3: fallback to latest recorded video
+  if (!chosen) {
+    const recentRes = await ytSearch();
+    if (recentRes && recentRes.items && recentRes.items.length > 0) {
+      const found = recentRes.items.find((it) => it.snippet && it.snippet.liveBroadcastContent === "none");
+      if (found) chosen = { item: found, status: "recorded" };
+    }
+  }
+}
+
+let videoId = null;
+let title = "";
+let description = "";
+let publishedAtDisplay = "";
+let thumbnail = "";
+
+if (chosen && chosen.item) {
+  videoId = chosen.item.id.videoId;
+  const snippet = chosen.item.snippet;
+  title = snippet.title || "Transmisie video";
+  description = snippet.description || "";
+  const dateToShow = chosen.status === "upcoming" ? chosen.scheduledStartTime : snippet.publishedAt;
+  publishedAtDisplay = dateToShow ? new Date(dateToShow).toLocaleString("ro-RO") : "";
+  thumbnail = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url || "";
+}
 ---
 
 <BaseLayout title="Live - BETEL" description="Urmărește transmisiunile noastre live și înregistrările recente" canonical="/live">
@@ -18,103 +128,22 @@ const API_KEY = import.meta.env.PUBLIC_YOUTUBE_API_KEY;
     </header>
 
     <main class="mt-6" id="live-main">
-      <div id="loading-state" class="rounded-md border border-border p-6 text-center text-muted-foreground">
-        Se încarcă transmisiunea...
-      </div>
-    </main>
-  </div>
-</BaseLayout>
-
-<script is:inline define:vars={{ CHANNEL_ID, CHANNEL_URL, API_KEY }}>
-  async function loadStream() {
-    const mainEl = document.getElementById('live-main');
-    if (!mainEl) return;
-
-    if (!API_KEY) {
-      mainEl.innerHTML = `
+      {!API_KEY && (
         <section class="rounded-md border border-border p-6 text-center">
           <p class="text-muted-foreground">Cheia API nu a fost configurată.</p>
-          <p class="mt-3"><a href="${CHANNEL_URL}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Vezi canalul pe YouTube</a></p>
-        </section>`;
-      return;
-    }
+          <p class="mt-3"><a href={CHANNEL_URL} target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Vezi canalul pe YouTube</a></p>
+        </section>
+      )}
 
-    async function ytSearch(eventType) {
-      const params = new URLSearchParams({
-        part: "snippet",
-        channelId: CHANNEL_ID,
-        type: "video",
-        maxResults: "5",
-        order: "date",
-        key: API_KEY,
-      });
-      if (eventType) params.set("eventType", eventType);
-
-      try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
-        if (!res.ok) return null;
-        return await res.json();
-      } catch (e) {
-        return null;
-      }
-    }
-
-    let chosen = null;
-
-    // 1) Priority 1: Check if channel is currently live
-    const liveRes = await ytSearch("live");
-    if (liveRes && liveRes.items && liveRes.items.length > 0) {
-      chosen = { item: liveRes.items[0], status: "live" };
-    }
-
-    // 2) Priority 2: Check upcoming streams (ONLY if within 2 days / 48 hours)
-    if (!chosen) {
-      const upcomingRes = await ytSearch("upcoming");
-      if (upcomingRes && upcomingRes.items && upcomingRes.items.length > 0) {
-        const upcomingItem = upcomingRes.items[0];
-        const publishTime = new Date(upcomingItem.snippet.publishedAt).getTime();
-        const now = new Date().getTime();
-        const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
-
-        if (publishTime - now <= twoDaysInMs) {
-          chosen = { item: upcomingItem, status: "upcoming" };
-        }
-      }
-    }
-
-    // 3) Priority 3: Fallback to the latest recorded stream or upload
-    if (!chosen) {
-      const recentRes = await ytSearch();
-      if (recentRes && recentRes.items && recentRes.items.length > 0) {
-        const found = recentRes.items.find((it) => it.snippet && it.snippet.liveBroadcastContent === "none");
-        if (found) chosen = { item: found, status: "recorded" };
-      }
-    }
-
-    if (chosen && chosen.item) {
-      const videoId = chosen.item.id.videoId;
-      const snippet = chosen.item.snippet;
-      const title = snippet.title || "Transmisie video";
-      const description = snippet.description || "";
-      const publishedAt = snippet.publishedAt ? new Date(snippet.publishedAt).toLocaleString("ro-RO") : "";
-      const thumbnail = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url || "";
-
-      let statusBadge = `<span class="inline-flex items-center gap-2 text-sm text-muted-foreground">Înregistrare</span>`;
-      if (chosen.status === "live") {
-        statusBadge = `<span class="inline-flex items-center gap-2 text-sm text-red-600 font-medium">● LIVE</span>`;
-      } else if (chosen.status === "upcoming") {
-        statusBadge = `<span class="inline-flex items-center gap-2 text-sm text-foreground">Programată</span>`;
-      }
-
-      mainEl.innerHTML = `
+      {API_KEY && chosen && videoId && (
         <section aria-labelledby="live-title">
-          <div id="live-title" class="sr-only">${title}</div>
+          <div id="live-title" class="sr-only">{title}</div>
           <div class="mt-4 grid gap-6 lg:grid-cols-3">
             <div class="lg:col-span-2">
               <div class="aspect-video w-full overflow-hidden rounded-md border border-border bg-black">
                 <iframe
-                  title="${title}"
-                  src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0"
+                  title={title}
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0`}
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowfullscreen
@@ -123,24 +152,35 @@ const API_KEY = import.meta.env.PUBLIC_YOUTUBE_API_KEY;
               </div>
               <div class="mt-3 flex items-start gap-4">
                 <div class="flex-1">
-                  <h2 class="text-lg font-semibold">${title}</h2>
-                  <p class="text-sm text-muted-foreground mt-1">${publishedAt}</p>
-                  <p class="mt-3 text-sm whitespace-pre-line text-muted-foreground">${description}</p>
+                  <h2 class="text-lg font-semibold">{title}</h2>
+                  <p class="text-sm text-muted-foreground mt-1">{publishedAtDisplay}</p>
+                  <p class="mt-3 text-sm whitespace-pre-line text-muted-foreground">{description}</p>
                 </div>
-                ${thumbnail ? `
+                {thumbnail && (
                   <div class="w-36 shrink-0">
-                    <img src="${thumbnail}" alt="Thumbnail" class="rounded-md object-cover" width="320" height="180" />
-                  </div>` : ''}
+                    <img src={thumbnail} alt="Thumbnail" class="rounded-md object-cover" width="320" height="180" />
+                  </div>
+                )}
               </div>
               <div class="mt-4">
-                <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">Vizualizează pe YouTube</a>
-                <a href="${CHANNEL_URL}" target="_blank" rel="noopener noreferrer" class="ml-3 text-sm text-muted-foreground hover:underline">Canalul nostru pe YouTube</a>
+                <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-muted">Vizualizează pe YouTube</a>
+                <a href={CHANNEL_URL} target="_blank" rel="noopener noreferrer" class="ml-3 text-sm text-muted-foreground hover:underline">Canalul nostru pe YouTube</a>
               </div>
             </div>
             <aside class="lg:col-span-1">
               <div class="rounded-md border border-border p-4">
                 <div class="text-xs font-semibold uppercase text-muted-foreground">Stare</div>
-                <div class="mt-2">${statusBadge}</div>
+                <div class="mt-2">
+                  {chosen.status === "live" && (
+                    <span class="inline-flex items-center gap-2 text-sm text-red-600 font-medium">● LIVE</span>
+                  )}
+                  {chosen.status === "upcoming" && (
+                    <span class="inline-flex items-center gap-2 text-sm text-foreground">Programată</span>
+                  )}
+                  {chosen.status === "recorded" && (
+                    <span class="inline-flex items-center gap-2 text-sm text-muted-foreground">Înregistrare</span>
+                  )}
+                </div>
                 <div class="mt-4">
                   <h3 class="text-sm font-medium">Despre</h3>
                   <p class="text-sm text-muted-foreground mt-1">Transmisiunile sunt preluate de pe canalul nostru YouTube. Dacă nu există transmisii active sau programate în curând, ultima transmisiune este afișată.</p>
@@ -148,15 +188,15 @@ const API_KEY = import.meta.env.PUBLIC_YOUTUBE_API_KEY;
               </div>
             </aside>
           </div>
-        </section>`;
-    } else {
-      mainEl.innerHTML = `
+        </section>
+      )}
+
+      {API_KEY && !chosen && (
         <section class="rounded-md border border-border p-6 text-center">
           <p class="text-muted-foreground">Nu am găsit nici o transmisie sau înregistrare publică pentru canalul nostru în acest moment.</p>
-          <p class="mt-3"><a href="${CHANNEL_URL}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Vezi canalul pe YouTube</a></p>
-        </section>`;
-    }
-  }
-
-  loadStream();
-</script>
+          <p class="mt-3"><a href={CHANNEL_URL} target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Vezi canalul pe YouTube</a></p>
+        </section>
+      )}
+    </main>
+  </div>
+</BaseLayout>
