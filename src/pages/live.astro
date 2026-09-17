@@ -27,9 +27,14 @@ async function ytSearch(eventType) {
 
   try {
     const res = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[live.astro] search.list failed (${eventType || "recent"}): ${res.status}`, body);
+      return null;
+    }
     return await res.json();
   } catch (e) {
+    console.error(`[live.astro] search.list threw (${eventType || "recent"}):`, e);
     return null;
   }
 }
@@ -48,9 +53,14 @@ async function ytVideosDetails(videoIds) {
   });
   try {
     const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params.toString()}`);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[live.astro] videos.list failed: ${res.status}`, body);
+      return null;
+    }
     return await res.json();
   } catch (e) {
+    console.error(`[live.astro] videos.list threw:`, e);
     return null;
   }
 }
@@ -81,21 +91,22 @@ if (!API_KEY) {
         const startTime = new Date(scheduledStartTime).getTime();
         const now = Date.now();
         const diff = startTime - now;
+        const oneHourMs = 60 * 60 * 1000;
 
-        // within the next 2 days (and not something that's somehow already "in the past" by more than 2 days)
-        if (diff <= TWO_DAYS_MS && diff > -TWO_DAYS_MS) {
+        // within the next 2 days, with a small grace window in case it's
+        // running a bit late (started slightly after its scheduled time)
+        if (diff <= TWO_DAYS_MS && diff > -oneHourMs) {
           chosen = { item: upcomingItem, status: "upcoming", scheduledStartTime };
         }
       }
     }
   }
 
-  // 3) Priority 3: fallback to latest recorded video
+  // 3) Priority 3: fallback to the latest completed live broadcast (not a regular upload)
   if (!chosen) {
-    const recentRes = await ytSearch();
+    const recentRes = await ytSearch("completed");
     if (recentRes && recentRes.items && recentRes.items.length > 0) {
-      const found = recentRes.items.find((it) => it.snippet && it.snippet.liveBroadcastContent === "none");
-      if (found) chosen = { item: found, status: "recorded" };
+      chosen = { item: recentRes.items[0], status: "recorded" };
     }
   }
 }
@@ -124,7 +135,6 @@ if (chosen && chosen.item) {
     <header class="mt-6">
       <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Live</div>
       <h1 class="mt-2 font-serif text-3xl font-semibold">Transmisiune live</h1>
-      <p class="text-muted-foreground mt-2">Urmărește transmisiunile noastre. Această pagină afișează prioritar transmisiunea curentă, apoi următoarea programată (cu cel mult 2 zile înainte), apoi ultima înregistrare.</p>
     </header>
 
     <main class="mt-6" id="live-main">
@@ -143,7 +153,7 @@ if (chosen && chosen.item) {
               <div class="aspect-video w-full overflow-hidden rounded-md border border-border bg-black">
                 <iframe
                   title={title}
-                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&rel=0`}
+                  src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0`}
                   frameborder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowfullscreen
