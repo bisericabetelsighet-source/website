@@ -6,8 +6,10 @@ import { SITE } from "../lib/blog-data.js";
 import { CONTACT, FORMS } from "../config/theme.config.ts";
 
 const hasContactEndpoint = Boolean(FORMS.contact.action);
-const contactAction = hasContactEndpoint ? FORMS.contact.action : "/contact";
-const contactMethod = hasContactEndpoint ? FORMS.contact.method : "get";
+const contactAction = hasContactEndpoint
+  ? FORMS.contact.action
+  : "https://api.web3forms.com/submit";
+const contactMethod = hasContactEndpoint ? FORMS.contact.method : "POST";
 const contactEnctype = hasContactEndpoint ? FORMS.contact.enctype : undefined;
 ---
 
@@ -29,26 +31,63 @@ const contactEnctype = hasContactEndpoint ? FORMS.contact.enctype : undefined;
 
     <div class="mt-12 grid gap-12 lg:grid-cols-[1fr_240px]">
       <form
+        id="contact-form"
         action={contactAction}
         method={contactMethod}
         enctype={contactEnctype}
         class="space-y-5"
       >
+        <!-- Configurare Web3Forms -->
+        <input type="hidden" name="access_key" value="f49e7aa3-e1e5-4c26-8afe-b49f86afdc66" />
+        <input type="hidden" name="subject" value={`Mesaj nou de pe site - ${SITE.name}`} />
+        <input type="hidden" name="from_name" value={SITE.name} />
+        <input type="checkbox" name="botcheck" class="hidden" style="display: none;" tabindex="-1" autocomplete="off" />
+
         <div>
           <label for="name" class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Nume</label>
-          <input id="name" name="name" autocomplete="name" required class="mt-2 w-full border-0 border-b border-input bg-transparent py-2 text-base outline-none focus:border-primary" />
+          <input
+            id="name"
+            name="name"
+            type="text"
+            autocomplete="name"
+            required
+            class="mt-2 w-full border-0 border-b border-input bg-transparent py-2 text-base outline-none focus:border-primary"
+          />
         </div>
+
         <div>
           <label for="email" class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" required class="mt-2 w-full border-0 border-b border-input bg-transparent py-2 text-base outline-none focus:border-primary" />
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            class="mt-2 w-full border-0 border-b border-input bg-transparent py-2 text-base outline-none focus:border-primary"
+          />
         </div>
+
         <div>
           <label for="message" class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Mesajul tău</label>
-          <textarea id="message" name="message" required rows="6" class="mt-2 w-full border-0 border-b border-input bg-transparent py-2 text-base outline-none focus:border-primary"></textarea>
+          <textarea
+            id="message"
+            name="message"
+            required
+            rows="6"
+            class="mt-2 w-full border-0 border-b border-input bg-transparent py-2 text-base outline-none focus:border-primary"
+          ></textarea>
         </div>
-        <button type="submit" class="rounded-md bg-foreground px-6 py-2.5 text-sm font-medium text-background hover:opacity-90">
-          Send
-        </button>
+
+        <div class="pt-2">
+          <button
+            id="contact-submit"
+            type="submit"
+            class="rounded-md bg-foreground px-6 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            Trimite mesajul
+          </button>
+          <p id="contact-status" class="mt-3 text-sm hidden" role="status" aria-live="polite"></p>
+        </div>
       </form>
 
       <aside class="space-y-6 border-l border-border pl-8 lg:block">
@@ -72,4 +111,58 @@ const contactEnctype = hasContactEndpoint ? FORMS.contact.enctype : undefined;
       </aside>
     </div>
   </div>
+
+  <script>
+    function initContactForm() {
+      const form = document.getElementById("contact-form") as HTMLFormElement | null;
+      const submitBtn = document.getElementById("contact-submit") as HTMLButtonElement | null;
+      const statusEl = document.getElementById("contact-status");
+
+      if (!form || !submitBtn || !statusEl || form.dataset.bound === "true") return;
+      form.dataset.bound = "true";
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Se trimite...";
+        statusEl.className = "mt-3 text-sm text-muted-foreground";
+        statusEl.textContent = "Se procesează mesajul...";
+
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData);
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const result = await response.json();
+
+          if (response.status === 200) {
+            statusEl.className = "mt-3 text-sm text-green-600 dark:text-green-400 font-medium";
+            statusEl.textContent = "Mesajul tău a fost trimis cu succes! Îți vom răspunde în curând.";
+            form.reset();
+          } else {
+            statusEl.className = "mt-3 text-sm text-red-600 dark:text-red-400";
+            statusEl.textContent = result.message || "A apărut o eroare la trimitere. Te rugăm să încerci din nou.";
+          }
+        } catch {
+          statusEl.className = "mt-3 text-sm text-red-600 dark:text-red-400";
+          statusEl.textContent = "Nu s-a putut stabili conexiunea. Verifică internetul și încearcă din nou.";
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Trimite mesajul";
+        }
+      });
+    }
+
+    initContactForm();
+    document.addEventListener("astro:page-load", initContactForm);
+  </script>
 </BaseLayout>
