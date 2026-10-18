@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import vercel from "@astrojs/vercel";
 
 const site =
-  process.env.SITE_URL || process.env.PUBLIC_SITE_URL || "https://quietpages-eta.vercel.app";
+  process.env.SITE_URL || process.env.PUBLIC_SITE_URL || "https://betelsighet.vercel.app";
 
 export default defineConfig({
   site,
