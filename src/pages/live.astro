@@ -163,8 +163,12 @@ if (chosen && chosen.item) {
                   <p class="mt-3 text-sm whitespace-pre-line text-muted-foreground">{description}</p>
                 </div>
                 {thumbnail && (
-                  <div class="w-36 shrink-0">
-                    <img src={thumbnail} alt="Thumbnail" class="rounded-md object-cover" width="320" height="180" />
+                  <div class="w-40 shrink-0 sm:w-48">
+                    <img 
+                      src={thumbnail} 
+                      alt="Thumbnail" 
+                      class="aspect-video w-full rounded-md object-cover" 
+                    />
                   </div>
                 )}
               </div>
