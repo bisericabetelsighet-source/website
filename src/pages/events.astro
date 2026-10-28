@@ -1,79 +1,49 @@
-export const events = [
-  {
-    slug: "sunday-service-morning",
-    title: "Rugăciune și Vestirea Evangheliei - Duminică dimineața",
-    date: "2026-08-16T12:00:00+03:00",
-    location: "Popa Lupu nr. 9, Sighetu Marmației",
-    excerpt: "Vă așteptăm alături de noi în fiecare zi de duminică de la ora 9!",
-    description:
-      "Întâlnirea de dimineață este un moment de închinare, predicare a Cuvântului și împărtășire a harului lui Dumnezeu. Vă invităm să participați și să vă uniți cu comunitatea noastră în rugăciune, cântare și învățături biblice.",
-    thumbnail: "/images/event-placeholder.svg",
-    youtubeId: "dQw4w9WgXcQ",
-    guests: [
-      "Pastorul bisericii",
-      "Echipa de rugăciune",
-      "Invitați speciali",
-    ],
-    qrCodes: [
-      { label: "Live stream", value: "https://betelsighet.ro/live" },
-      { label: "Contact", value: "https://betelsighet.ro/contact" },
-    ],
-  },
-  {
-    slug: "sunday-service-evening",
-    title: "Rugăciune și Vestirea Evangheliei - Duminică seara",
-    date: "2026-08-16T20:00:00+03:00",
-    location: "Popa Lupu nr. 9, Sighetu Marmației",
-    excerpt: "O întâlnire de adunare, rugăciune și mărturie în seara de duminică.",
-    description:
-      "Slujba de seară oferă un moment de închinare profundă și de ascultare a Cuvântului lui Dumnezeu. Vei găsi un mediu cald, plin de iubire și de împărtășire a credinței.",
-    thumbnail: "/images/event-placeholder.svg",
-    youtubeId: "M7lc1UVf-VE",
-    guests: [
-      "Echipa de worship",
-      "Tineretul bisericii",
-      "Membri ai comunității",
-    ],
-    qrCodes: [
-      { label: "Program", value: "https://betelsighet.ro/events" },
-      { label: "Harta", value: "https://maps.google.com/?q=Popa+Lupu+9+Sighetu+Marma%C8%9Biei" },
-    ],
-  },
-  {
-    slug: "thursday-service",
-    title: "Rugăciune și Vestirea Evangheliei - Joi seara",
-    date: "2026-08-13T21:00:00+03:00",
-    location: "Popa Lupu nr. 9, Sighetu Marmației",
-    excerpt: "Rugăciune și învățătură pentru o zi de mijloc plină de har.",
-    description:
-      "Joi seara este o oportunitate de a rămâne uniți în rugăciune, de a primi învățătură și de a ne întări în credință. Vă invităm să participați și să aduceți cu voi pe cei din jurul vostru.",
-    thumbnail: "/images/event-placeholder.svg",
-    youtubeId: "ScMzIvxBSi4",
-    guests: [
-      "Ministerul de rugăciune",
-      "Păstori și lideri",
-      "Comunitatea locală",
-    ],
-    qrCodes: [
-      { label: "LIVE", value: "https://betelsighet.ro/live" },
-      { label: "Contact", value: "https://betelsighet.ro/contact" },
-    ],
-  },
-  {
-    slug: "tuesday-service",
-    title: "Stăruință în rugăciune - Marți seara",
-    date: "2026-08-11T21:00:00+03:00",
-    location: "Popa Lupu nr. 9, Sighetu Marmației",
-    excerpt: "Un timp de rugăciune și închinare pentru toți cei care caută apropierea lui Dumnezeu.",
-    description:
-      "În această întâlnire ne concentrăm pe rugăciune, pocăință și perseverare în credință. Este un moment în care ne încurajăm unii pe alții să stăm înaintea lui Dumnezeu cu inima deschisă.",
-    thumbnail: "/images/event-placeholder.svg",
-    youtubeId: "aqz-KE-bpKQ",
-    guests: [
-      "Grupul de rugăciune",
-      "Familii și tineri",
-      "Lideri de congregație",
-    ],
-    qrCodes: [
-      { label: "Evenimente", value: "https://betelsighet.ro/events" },
-      { label: "Pray
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+import Icon from "../components/Icon.astro";
+import { events } from "../lib/events-data.js";
+---
+
+<BaseLayout title="Evenimente - BETEL" description="Calendarul evenimentelor și slujbelor BETEL" canonical="/events">
+  <div class="mx-auto max-w-5xl px-5 py-12">
+    <Breadcrumbs items={[{ label: "Acasă", to: "/" }, { label: "Evenimente" }]} />
+
+    <header class="mt-6">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Events</div>
+      <h1 class="mt-2 font-serif text-3xl font-semibold">Evenimente</h1>
+      <p class="text-muted-foreground mt-2">Următoarele întâlniri, slujbe și evenimente organizate de comunitatea noastră.</p>
+    </header>
+
+    <main aria-labelledby="upcoming-events">
+      <h2 id="upcoming-events" class="sr-only">Evenimente viitoare</h2>
+      <ul class="space-y-6">
+        {events.map((event) => (
+          <li key={event.slug} class="rounded-md border border-border p-5">
+            <article>
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <h3 class="text-xl font-semibold">
+                    <a href={`/events/${event.slug}`} class="hover:underline">{event.title}</a>
+                  </h3>
+                  <p class="mt-1 text-sm text-muted-foreground">{event.excerpt}</p>
+                  <p class="mt-3 text-sm">
+                    <time datetime={event.date} class="font-medium">{new Date(event.date).toLocaleString("ro-RO", { dateStyle: "long", timeStyle: "short" })}</time>
+                    <span class="mx-2">•</span>
+                    <span>{event.location}</span>
+                  </p>
+                </div>
+                <div class="flex-shrink-0">
+                  <a href={`/events/${event.slug}`} class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-muted">
+                    Detalii
+                    <Icon name="arrow-right" class="h-4 w-4" />
+                  </a>
+                </div>
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </main>
+  </div>
+</BaseLayout>
