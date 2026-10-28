@@ -1,5 +1,5 @@
 export const events = [
-  {
+  /*{
     slug: "sunday-service-morning",
     title: "Rugăciune și Vestirea Evangheliei - Duminică dimineața",
     date: "2026-08-16T12:00:00+03:00",
@@ -77,6 +77,25 @@ export const events = [
     qrCodes: [
       { label: "Evenimente", value: "https://betelsighet.ro/events" },
       { label: "Pray", value: "https://betelsighet.ro/contact" },
+    ],
+  },*/
+  {
+    slug: "tbscon26",
+    title: "TBSCON26",
+    date: "2026-08-11T21:00:00+03:00",
+    location: "Popa Lupu nr. 9, Sighetu Marmației",
+    excerpt: "Conferința anuală de tineret",
+    description:
+      "Programul conferinței: Sesiunea 1: ora 10:00, Pauză: ora 12:00, Sesiunea 2: ora 14:00",
+    thumbnail: "/images/event-placeholder.svg",
+    youtubeId: "betelsighet",
+    guests: [
+      "Gabi Zăgrean",
+      "Grupul Elah",
+    ],
+    qrCodes: [
+      { label: "Live Sesiunea I", value: "https://betelsighet.ro/events" },
+      { label: "Live Sesiunea II", value: "https://betelsighet.ro/contact" },
     ],
   },
 ];
