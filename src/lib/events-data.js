@@ -1,5 +1,5 @@
 export const events = [
-  /*{
+  {
     slug: "sunday-service-morning",
     title: "Rugăciune și Vestirea Evangheliei - Duminică dimineața",
     date: "2026-08-16T12:00:00+03:00",
@@ -58,13 +58,26 @@ export const events = [
       { label: "LIVE", value: "https://betelsighet.ro/live" },
       { label: "Contact", value: "https://betelsighet.ro/contact" },
     ],
-  },*/
+  },
   {
     slug: "tuesday-service",
     title: "Stăruință în rugăciune - Marți seara",
     date: "2026-08-11T21:00:00+03:00",
     location: "Popa Lupu nr. 9, Sighetu Marmației",
     excerpt: "Un timp de rugăciune și închinare pentru toți cei care caută apropierea lui Dumnezeu.",
+    description:
+      "În această întâlnire ne concentrăm pe rugăciune, pocăință și perseverare în credință. Este un moment în care ne încurajăm unii pe alții să stăm înaintea lui Dumnezeu cu inima deschisă.",
+    thumbnail: "/images/event-placeholder.svg",
+    youtubeId: "aqz-KE-bpKQ",
+    guests: [
+      "Grupul de rugăciune",
+      "Familii și tineri",
+      "Lideri de congregație",
+    ],
+    qrCodes: [
+      { label: "Evenimente", value: "https://betelsighet.ro/events" },
+      { label: "Pray", value: "https://betelsighet.ro/contact" },
+    ],
   },
   {
     slug: "tbscon26",
