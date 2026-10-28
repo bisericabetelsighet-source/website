@@ -1,0 +1,149 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import { events } from "../../lib/events-data.js";
+
+export function getStaticPaths() {
+  return events.map((event) => ({
+    params: { slug: event.slug },
+    props: { event },
+  }));
+}
+
+const { event } = Astro.props;
+
+if (!event) {
+  throw new Error("Evenimentul nu a fost găsit.");
+}
+
+const dateLabel = new Date(event.date).toLocaleString("ro-RO", {
+  dateStyle: "full",
+  timeStyle: "short",
+});
+
+const qrCodeUrl = (value) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(value)}`;
+---
+
+<BaseLayout
+  title={`${event.title} - Evenimente - BETEL`}
+  description={event.excerpt}
+  canonical={`/events/${event.slug}`}
+>
+  <div class="mx-auto max-w-6xl px-5 py-12">
+    <Breadcrumbs
+      items={[
+        { label: "Acasă", to: "/" },
+        { label: "Evenimente", to: "/events" },
+        { label: event.title },
+      ]}
+    />
+
+    <header class="mt-6">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Eveniment</div>
+      <h1 class="mt-2 font-serif text-4xl font-semibold leading-tight sm:text-5xl">{event.title}</h1>
+      <p class="mt-4 max-w-3xl text-lg text-muted-foreground">{event.excerpt}</p>
+    </header>
+
+    <div class="mt-10 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+      <div class="space-y-8">
+        <figure class="overflow-hidden rounded-md border border-border bg-muted">
+          <img
+            src={event.thumbnail}
+            alt={event.title}
+            class="h-[360px] w-full object-cover sm:h-[420px]"
+          />
+        </figure>
+
+        <section class="rounded-md border border-border bg-card p-6">
+          <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Despre eveniment</div>
+          <h2 class="mt-4 font-serif text-3xl font-semibold">Detalii</h2>
+          <p class="mt-4 leading-relaxed text-muted-foreground">{event.description}</p>
+        </section>
+      </div>
+
+      <aside class="space-y-8">
+        <div class="rounded-md border border-border bg-card p-6">
+          <h2 class="font-serif text-2xl font-semibold">Informații</h2>
+          <ul class="mt-5 space-y-5 text-sm">
+            <li>
+              <span class="block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Data</span>
+              <time datetime={event.date} class="mt-1 block text-base font-medium text-foreground">{dateLabel}</time>
+            </li>
+            <li>
+              <span class="block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Locație</span>
+              <p class="mt-1 text-base font-medium text-foreground">{event.location}</p>
+            </li>
+            {event.guests && event.guests.length > 0 && (
+              <li>
+                <span class="block text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Invitați</span>
+                <ul class="mt-2 space-y-2 text-base text-foreground">
+                  {event.guests.map((guest) => (
+                    <li class="flex items-center gap-2">
+                      <span class="inline-block h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+                      <span>{guest}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            )}
+          </ul>
+        </div>
+
+        {event.qrCodes && event.qrCodes.length > 0 && (
+          <div class="rounded-md border border-border bg-card p-6">
+            <h2 class="font-serif text-2xl font-semibold">QR code</h2>
+            <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              {event.qrCodes.map((qr) => (
+                <div class="rounded-md border border-border bg-muted/60 p-3 text-center">
+                  <img
+                    src={qrCodeUrl(qr.value)}
+                    alt={`${qr.label} QR code`}
+                    class="mx-auto h-28 w-28 rounded-md bg-white p-2"
+                  />
+                  <div class="mt-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{qr.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
+    </div>
+
+    {event.youtubeId && (
+      <section class="mt-12 rounded-md border border-border bg-card p-6">
+        <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Live stream</div>
+        <h2 class="mt-3 font-serif text-3xl font-semibold">Transmisiune live</h2>
+        <div class="mt-5 overflow-hidden rounded-md border border-border bg-black">
+          <div class="aspect-video w-full">
+            <iframe
+              src={`https://www.youtube.com/embed/${event.youtubeId}?rel=0&modestbranding=1`}
+              title={`${event.title} live stream`}
+              class="h-full w-full"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <section class="mt-12 rounded-md border border-border bg-card p-6">
+      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Locație</div>
+      <h2 class="mt-3 font-serif text-3xl font-semibold">Popa Lupu nr. 9, Sighetu Marmației</h2>
+      <p class="mt-4 max-w-2xl text-muted-foreground">
+        Ne aflăm la adresa <strong class="font-medium text-foreground">Popa Lupu nr. 9</strong>, în Sighetu Marmației. Vă așteptăm să participați la evenimentul nostru și să ne întâlniți în persoană.
+      </p>
+      <a
+        href="https://www.google.com/maps/search/?api=1&query=Popa+Lupu+9+Sighetu+Marma%C8%9Biei"
+        target="_blank"
+        rel="noreferrer"
+        class="mt-5 inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+      >
+        Deschide locația în Google Maps
+      </a>
+    </section>
+  </div>
+</BaseLayout>
+"path":"src/lib/events-data.js
