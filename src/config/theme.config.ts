@@ -60,9 +60,9 @@ export const authors = [
   {
     slug: "simion-bumbar",
     name: "Simion BUMBAR",
-    bio: "Pastor coordonator, Secretar General al Cultului Creștin Penticostal din România.",
+    bio: "Pastor coordonator, Secretar General al Cultului Creștin Penticostal din România, Președinte al Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
-      "long bio Simion Bumbar",
+      "Pastor coordonator, Secretar General al Cultului Creștin Penticostal din România, Președinte al Comunității Regionale Penticostale Maramureș–Sătmar.",
     avatar: "/avatars/Simion-Bumbar.svg",
   },
   {
@@ -70,7 +70,7 @@ export const authors = [
     name: "Grigore TODORAN",
     bio: "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
-      "long bio Grigore Todoran",
+      "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     avatar: "/avatars/Grigore-Todoran.svg",
   },
   {
@@ -78,7 +78,7 @@ export const authors = [
     name: "Marius TURZA",
     bio: "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     longBio:
-      "long bio Marius Turza",
+      "Pastor asistent, membru al conducerii Comunității Regionale Penticostale Maramureș–Sătmar.",
     avatar: "/avatars/Marius-Turza.svg",
   },
   {
@@ -86,7 +86,7 @@ export const authors = [
     name: "Florin POP",
     bio: "Pastor asistent, lider tineret TBS.",
     longBio:
-      "long bio Florin Pop",
+      "Pastor asistent, lider tineret TBS.",
     avatar: "/avatars/Florin-Pop.svg",
   },
   {
@@ -94,7 +94,7 @@ export const authors = [
     name: "Alexandru PALAS",
     bio: "Prezbiter",
     longBio:
-      "long bio Alex Palas",
+      "Prezbiter",
     avatar: "/avatars/Alexandru-Palas.svg",
   },
   {
@@ -106,27 +106,27 @@ export const authors = [
     avatar: "/avatars/Claudiu-Mihai.svg",
   },
   {
+    slug: "samuel-bumbar",
+    name: "Samuel BUMBAR",
+    bio: "Diacon, responsabil pentru departamentul Media",
+    longBio:
+      "Diacon, responsabil pentru departamentul Media",
+    avatar: "/avatars/Samuel-Bumbar.svg",
+  },
+  {
     slug: "samuel-suciu",
     name: "Samuel SUCIU",
     bio: "Casier",
     longBio:
-      "long bio Samuel Suciu",
+      "Casier",
     avatar: "/avatars/Samuel-Suciu.svg",
-  },
-  {
-    slug: "samuel-bumbar",
-    name: "Samuel BUMBAR",
-    bio: "Membru comitet, responsabil pentru departamentul Media",
-    longBio:
-      "long bio Samuel Bumbar",
-    avatar: "/avatars/Samuel-Bumbar.svg",
   },
   {
     slug: "stefan-mois",
     name: "Ștefan MOIȘ",
     bio: "Membru comitet, responsabil pentru departamentul Primire",
     longBio:
-      "long bio Ștefan Moiș",
+      "Membru comitet, responsabil pentru departamentul Primire",
     avatar: "/avatars/Ștefan-Moiș.svg",
   },
 ];
