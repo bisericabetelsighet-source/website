@@ -86,7 +86,10 @@ export const events = [
     location: "Popa Lupu nr. 9, Sighetu Marmației",
     excerpt: "Conferința anuală de tineret - TBSCON26",
     description:
-      "Programul conferinței: Sesiunea 1: ora 10:00, Pauză: ora 12:00, Sesiunea 2: ora 14:00",
+      "Programul conferinței:",
+      "Sesiunea 1: ora 10:00",
+      "Pauză: ora 12:00",
+      "Sesiunea 2: ora 14:00",
     thumbnail: "/images/event-placeholder.svg",
     youtubeId: "betelsighet",
     guests: [
@@ -94,8 +97,8 @@ export const events = [
       "Grupul Elah",
     ],
     qrCodes: [
-      { label: "Live Sesiunea I", value: "https://betelsighet.ro/events" },
-      { label: "Live Sesiunea II", value: "https://betelsighet.ro/contact" },
+      { label: "Live Sesiunea I", value: "https://youtube.com/live/HuqeoMywBL8" },
+      { label: "Live Sesiunea II", value: "https://youtube.com/live/Dx4C677b6vU" },
     ],
   },
 ];
