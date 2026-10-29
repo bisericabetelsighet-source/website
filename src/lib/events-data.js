@@ -87,7 +87,7 @@ export const events = [
     excerpt: "Conferința anuală de tineret - TBSCON26",
     description:
       "Programul conferinței: Sesiunea 1: ora 10:00, Pauză: ora 12:00, Sesiunea 2: ora 14:00",
-    thumbnail: "/images/event-placeholder.svg",
+    thumbnail: "/images/tbscon26-placeholder.svg",
     //youtubeId: "betelsighet",
     guests: [
       "Gabi Zăgrean",
