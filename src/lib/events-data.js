@@ -88,7 +88,7 @@ export const events = [
     description:
       "Programul conferinței: Sesiunea 1: ora 10:00, Pauză: ora 12:00, Sesiunea 2: ora 14:00",
     thumbnail: "/images/tbscon26-placeholder.svg",
-    //youtubeId: "betelsighet",
+    youtubeId: "UCMN5bRpid3A09cIrkz97H2A",
     guests: [
       "Gabi Zăgrean",
       "Grupul Elah",
