@@ -82,13 +82,13 @@ export const events = [
   {
     slug: "tbscon26",
     title: "Fii loial",
-    date: "2026-11-07T07:00:00+03:00",
+    date: "2026-11-07T13:00:00+03:00",
     location: "Popa Lupu nr. 9, Sighetu Marmației",
     excerpt: "Conferința anuală de tineret - TBSCON26",
     description:
       "Programul conferinței: Sesiunea 1: ora 10:00, Pauză: ora 12:00, Sesiunea 2: ora 14:00",
     thumbnail: "/images/event-placeholder.svg",
-    youtubeId: "betelsighet",
+    //youtubeId: "betelsighet",
     guests: [
       "Gabi Zăgrean",
       "Grupul Elah",
